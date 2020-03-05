@@ -69,7 +69,7 @@ class ModelWrapper(nn.Module):
                 total += targets.size(0)
         acc = correct / total
 
-        scores = {'accuracy' : round(acc,1)}
+        scores = {'accuracy' : round(acc,3)}
 
         return scores
     
