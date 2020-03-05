@@ -7,6 +7,12 @@
 
 ## Results
 
+### Quantitative analysis of correlation
+
+correlation between evaluation and fine-tuning accuracy with different pruning ratios (MobileNet V1 on ImageNet classificationTop-1 results)
+
+![corr](fig/cor_fix_flops.png)
+
 ### Results on ImageNet
 
 | Model | FLOPs | Top-1 Acc |
