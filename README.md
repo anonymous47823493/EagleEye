@@ -1,11 +1,25 @@
-# FNNP: Fast Neural Network Pruning Using Adaptive Batch Normalization
+# Pruning Neural Network Using Fast Performance Prediction
 
 
 
 ![pipeline](fig/fnnp.png)
 
 
+## Results
 
+### Results on ImageNet
+
+| Model | FLOPs | Top-1 Acc |
+| ---   | ----  |  -------  |
+| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%|
+| MobileNetV1 | 284M | 70.9% |
+
+### Results on CIFAR-10
+
+| Model | FLOPs | Top-1 Acc |
+| ---   | ----  |  -----    |
+| ResNet-56 | 62.23M | 94.66% |
+| MobileNetV1 | 26.5M<br>12.1M<br>3.3M | 91.89% <br> 91.44% <br> 88.01% |
 ## Setup
 
 1. **Prepare Data**
