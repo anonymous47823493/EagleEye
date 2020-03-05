@@ -9,7 +9,7 @@
 
 ### Quantitative analysis of correlation
 
-correlation between evaluation and fine-tuning accuracy with different pruning ratios (MobileNet V1 on ImageNet classification Top-1 results)
+Correlation between evaluation and fine-tuning accuracy with different pruning ratios (MobileNet V1 on ImageNet classification Top-1 results)
 
 ![corr](fig/cor_fix_flops.png)
 
