@@ -1,8 +1,8 @@
-# Pruning Neural Network Using Fast Performance Prediction
+# EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning
 
 
 
-![pipeline](fig/fnnp.png)
+![pipeline](fig/eye.png)
 
 
 ## Results
