@@ -1,9 +1,15 @@
 # EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning
 
-
+PyTorch implementation for *EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning*
 
 ![pipeline](fig/eye.png)
 
+## Code Release Schedule
+
+- [x] Inference Code
+- [ ] Pruning Strategy Generation
+- [ ] ABN-based Evaluation of Pruning Strategy
+- [ ] Finetuning of Pruned Model
 
 ## Results
 
