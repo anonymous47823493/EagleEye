@@ -5,6 +5,7 @@ PyTorch implementation for *EagleEye: Fast Sub-net Evaluation for Efficient Neur
 ![pipeline](fig/eye.png)
 
 ## Code Release Schedule
+
 - [x] Inference Code
 - [ ] Pruning Strategy Generation
 - [ ] ABN-based Evaluation of Pruning Strategy
