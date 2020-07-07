@@ -122,3 +122,17 @@ Top-1 Acc of Pruned Model on imagenet:0.76366
 ##########################
 ```
 
+## Citation
+
+If you use EagleEye in your research, please consider citing:
+
+```
+@misc{li2020eagleeye,
+    title={EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning},
+    author={Bailin Li and Bowen Wu and Jiang Su and Guangrun Wang and Liang Lin},
+    year={2020},
+    eprint={2007.02491},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
+}
+```
