@@ -30,7 +30,7 @@ Correlation between evaluation and fine-tuning accuracy with different pruning r
 
 | Model | FLOPs | Top-1 Acc |
 | ---   | ----  |  -----    |
-| ResNet-56 | 62.23M | 94.66% |
+| ResNet-50 | 62.23M | 94.66% |
 | MobileNetV1 | 26.5M<br>12.1M<br>3.3M | 91.89% <br> 91.44% <br> 88.01% |
 ## Setup
 
