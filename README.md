@@ -21,10 +21,10 @@ Correlation between evaluation and fine-tuning accuracy with different pruning r
 
 ### Results on ImageNet
 
-| Model | FLOPs | Top-1 Acc |
-| ---   | ----  |  -------  |
-| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%|
-| MobileNetV1 | 284M | 70.9% |
+| Model | FLOPs | Top-1 Acc | Top-5 Acc |
+| ---   | ----  |  -------  | --------  |
+| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% |
+| MobileNetV1 | 284M | 70.9% |  89.62% |
 
 ### Results on CIFAR-10
 
