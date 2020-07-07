@@ -6,7 +6,7 @@ PyTorch implementation for *[EagleEye: Fast Sub-net Evaluation for Efficient Neu
 
 [Bailin Li,](https://bezorro.github.io/) [Bowen Wu](https://bowenwu1.github.io/), Jiang Su, [Guangrun Wang](https://wanggrun.github.io/projects/zw), [Liang Lin](http://www.linliang.net/)
 
-Presented at [ECCV 2020](https://eccv2020.eu/accepted-papers/) (Oral)
+Presented at [ECCV 2020 (Oral)](https://eccv2020.eu/accepted-papers/)
 
 ![pipeline](fig/eye.png)
 
