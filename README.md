@@ -1,8 +1,29 @@
 # EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning
+![Python version support](https://img.shields.io/badge/python-3.7-blue.svg)
+![PyTorch version support](https://img.shields.io/badge/pytorch-1.4.0-red.svg)
 
-PyTorch implementation for *EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning*
+PyTorch implementation for *[EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning](https://arxiv.org/abs/2007.02491)*
+
+[Bailin Li,](https://bezorro.github.io/) [Bowen Wu](https://bowenwu1.github.io/), Jiang Su, [Guangrun Wang](https://wanggrun.github.io/projects/zw), [Liang Lin](http://www.linliang.net/)
+
+Presented at [ECCV 2020](https://eccv2020.eu/accepted-papers/) (Oral)
 
 ![pipeline](fig/eye.png)
+
+## Citation
+
+If you use EagleEye in your research, please consider citing:
+
+```
+@misc{li2020eagleeye,
+    title={EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning},
+    author={Bailin Li and Bowen Wu and Jiang Su and Guangrun Wang and Liang Lin},
+    year={2020},
+    eprint={2007.02491},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
+}
+```
 
 ## Code Release Schedule
 
@@ -11,27 +32,6 @@ PyTorch implementation for *EagleEye: Fast Sub-net Evaluation for Efficient Neur
 - [ ] ABN-based Evaluation of Pruning Strategy
 - [ ] Finetuning of Pruned Model
 
-## Results
-
-### Quantitative analysis of correlation
-
-Correlation between evaluation and fine-tuning accuracy with different pruning ratios (MobileNet V1 on ImageNet classification Top-1 results)
-
-![corr](fig/cor_fix_flops.png)
-
-### Results on ImageNet
-
-| Model | FLOPs | Top-1 Acc | Top-5 Acc |
-| ---   | ----  |  -------  | --------  |
-| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% |
-| MobileNetV1 | 284M | 70.9% |  89.62% |
-
-### Results on CIFAR-10
-
-| Model | FLOPs | Top-1 Acc |
-| ---   | ----  |  -----    |
-| ResNet-50 | 62.23M | 94.66% |
-| MobileNetV1 | 26.5M<br>12.1M<br>3.3M | 91.89% <br> 91.44% <br> 88.01% |
 ## Setup
 
 1. **Prepare Data**
@@ -78,8 +78,6 @@ optional arguments:
                         Number of workers used in dataloading
 ```
 
-
-
 **For ResNet50:**
 
 ```shell
@@ -108,8 +106,6 @@ python3 main.py \
 --num_workers 20
 ```
 
-
-
 After running above program, the output looks like below:
 
 ```
@@ -122,17 +118,24 @@ Top-1 Acc of Pruned Model on imagenet:0.76366
 ##########################
 ```
 
-## Citation
+## Results
 
-If you use EagleEye in your research, please consider citing:
+### Quantitative analysis of correlation
 
-```
-@misc{li2020eagleeye,
-    title={EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning},
-    author={Bailin Li and Bowen Wu and Jiang Su and Guangrun Wang and Liang Lin},
-    year={2020},
-    eprint={2007.02491},
-    archivePrefix={arXiv},
-    primaryClass={cs.CV}
-}
-```
+Correlation between evaluation and fine-tuning accuracy with different pruning ratios (MobileNet V1 on ImageNet classification Top-1 results)
+
+![corr](fig/cor_fix_flops.png)
+
+### Results on ImageNet
+
+| Model | FLOPs | Top-1 Acc | Top-5 Acc |
+| ---   | ----  |  -------  | --------  |
+| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% |
+| MobileNetV1 | 284M | 70.9% |  89.62% |
+
+### Results on CIFAR-10
+
+| Model | FLOPs | Top-1 Acc |
+| ---   | ----  |  -----    |
+| ResNet-50 | 62.23M | 94.66% |
+| MobileNetV1 | 26.5M<br>12.1M<br>3.3M | 91.89% <br> 91.44% <br> 88.01% |
