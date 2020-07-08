@@ -4,7 +4,7 @@
 
 PyTorch implementation for *[EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning](https://arxiv.org/abs/2007.02491)*
 
-[Bailin Li,](https://bezorro.github.io/) [Bowen Wu](https://bowenwu1.github.io/), Jiang Su, [Guangrun Wang](https://wanggrun.github.io/projects/zw), [Liang Lin](http://www.linliang.net/)
+[Bailin Li,](https://bezorro.github.io/) [Bowen Wu](https://github.com/Bowenwu1), Jiang Su, [Guangrun Wang](https://wanggrun.github.io/projects/zw), [Liang Lin](http://www.linliang.net/)
 
 Presented at [ECCV 2020 (Oral)](https://eccv2020.eu/accepted-papers/)
 
@@ -29,8 +29,31 @@ If you use EagleEye in your research, please consider citing:
 
 - [x] Inference Code
 - [ ] Pruning Strategy Generation
-- [ ] ABN-based Evaluation of Pruning Strategy
+- [ ] Adaptive-BN-based Candidate Evaluation of Pruning Strategy
 - [ ] Finetuning of Pruned Model
+
+## Adaptive-BN-based Candidate Evaluation
+
+For the ease of your own implementation, here we present the key code for proposed Adaptive-BN-based Candidate Evaluation. The official implementation will be released soon.
+
+```python
+def eval_pruning_strategy(model, pruning_strategy, dataloader_train):
+   # Apply filter pruning to trained model
+   pruned_model = prune(model, pruning_strategy)
+
+   # Adaptive-BN
+   pruned_model.train()
+   max_iter = 50
+   with torch.no_grad():
+      for iter_in_epoch, sample in enumerate(dataloader_train):
+            pruned_model.forward(sample)
+            if iter_in_epoch > max_iter:
+                break
+
+   # Eval top-1 accuracy for pruned model
+   acc = model.get_val_acc()
+   return acc
+```
 
 ## Setup
 
@@ -128,10 +151,10 @@ Correlation between evaluation and fine-tuning accuracy with different pruning r
 
 ### Results on ImageNet
 
-| Model | FLOPs | Top-1 Acc | Top-5 Acc |
-| ---   | ----  |  -------  | --------  |
-| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% |
-| MobileNetV1 | 284M | 70.9% |  89.62% |
+| Model | FLOPs | Top-1 Acc | Top-5 Acc | Pretrained Model |
+| ---   | ----  |  -------  | --------  | ---------------- |
+| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% | [link](https://www.dropbox.com/s/ij6a6xbbtyfozc8/resnet50_75flops.pth?dl=0) <br> [link](https://www.dropbox.com/s/czc5hl7zjl2d146/resnet50_50flops.pth?dl=0) <br> [link](https://www.dropbox.com/s/ezdmjvlxx7pgrpo/resnet50_25flops.pth?dl=0) |
+| MobileNetV1 | 284M | 70.9% |  89.62% | [link](https://www.dropbox.com/s/rf3cnlmruckdu7n/mobilenetv1_50flops.pth?dl=0) |
 
 ### Results on CIFAR-10
 
