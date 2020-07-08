@@ -153,8 +153,8 @@ Correlation between evaluation and fine-tuning accuracy with different pruning r
 
 | Model | FLOPs | Top-1 Acc | Top-5 Acc | Pretrained Model |
 | ---   | ----  |  -------  | --------  | ---------------- |
-| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% | [link](https://www.dropbox.com/s/ij6a6xbbtyfozc8/resnet50_75flops.pth?dl=0) <br> [link](https://www.dropbox.com/s/czc5hl7zjl2d146/resnet50_50flops.pth?dl=0) <br> [link](https://www.dropbox.com/s/ezdmjvlxx7pgrpo/resnet50_25flops.pth?dl=0) |
-| MobileNetV1 | 284M | 70.9% |  89.62% | [link](https://www.dropbox.com/s/rf3cnlmruckdu7n/mobilenetv1_50flops.pth?dl=0) |
+| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% | [resnet50_75flops.pth](https://www.dropbox.com/s/ij6a6xbbtyfozc8/resnet50_75flops.pth?dl=0) <br> [resnet50_50flops.pth](https://www.dropbox.com/s/czc5hl7zjl2d146/resnet50_50flops.pth?dl=0) <br> [resnet50_25flops.pth](https://www.dropbox.com/s/ezdmjvlxx7pgrpo/resnet50_25flops.pth?dl=0) |
+| MobileNetV1 | 284M | 70.9% |  89.62% | [mobilenetv1_50flops.pth](https://www.dropbox.com/s/80o2fxcc63z59qw/mobilenetv1_50flops_latest.pth?dl=0) |
 
 ### Results on CIFAR-10
 
