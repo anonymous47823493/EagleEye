@@ -51,7 +51,7 @@ def eval_pruning_strategy(model, pruning_strategy, dataloader_train):
                 break
 
    # Eval top-1 accuracy for pruned model
-   acc = model.get_val_acc()
+   acc = pruned_model.get_val_acc()
    return acc
 ```
 
