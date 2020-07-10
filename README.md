@@ -4,7 +4,7 @@
 
 PyTorch implementation for *[EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning](https://arxiv.org/abs/2007.02491)*
 
-[Bailin Li,](https://bezorro.github.io/) [Bowen Wu](https://github.com/Bowenwu1), Jiang Su, [Guangrun Wang](https://wanggrun.github.io/projects/zw), [Liang Lin](http://www.linliang.net/)
+[Bailin Li,](https://github.com/bezorro) [Bowen Wu](https://github.com/Bowenwu1), Jiang Su, [Guangrun Wang](https://wanggrun.github.io/projects/zw), [Liang Lin](http://www.linliang.net/)
 
 Presented at [ECCV 2020 (Oral)](https://eccv2020.eu/accepted-papers/)
 
