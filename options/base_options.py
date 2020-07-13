@@ -1,3 +1,9 @@
+#  ------------------------------------------------------------------
+#  Author: Bowen Wu
+#  Email: wubw6@mail2.sysu.edu.cn
+#  Affiliation: Sun Yat-sen University, Guangzhou
+#  Date: 13 JULY 2020
+#  ------------------------------------------------------------------
 import argparse
 import os
 
@@ -10,7 +16,7 @@ class BaseOptions():
         # model params
         self.parser.add_argument('--model_name', type=str, default="mobilenetv1", help="what kind of model you are using. Only support `resnet50`, `mobilenetv1` and `mobilenetv1_imagenet`")
         self.parser.add_argument('--num_classes', type=int, default=1000, help="num of class label")
-        self.parser.add_argument('--pruned_model', type=str, default="", help='path to pruned model state dict')
+        self.parser.add_argument('--checkpoint', type=str, default="", help='path to model state dict')
 
         # env params
         self.parser.add_argument('--gpu_ids', type=int, default=[0], nargs="+", help='GPU ids.')
@@ -20,8 +26,19 @@ class BaseOptions():
         self.parser.add_argument('--dataset_path', type=str, default="./cifar10", help="path to dataset")
         self.parser.add_argument('--dataset_name', type=str, default="cifar10_224", help="filename of the file contains your own `get_dataloaders` function")
         self.parser.add_argument('--num_workers', type=int, default=2, help='Number of workers used in dataloading')
+        self.parser.add_argument('--lr', type=float, default=0.001, help="learning rate while fine-tuning")
+        self.parser.add_argument('--weight_decay', type=float, default=5e-4, help="weight decay while fine-tuning")
+        self.parser.add_argument('--momentum', type=float, default=0.9, help="momentum while fine-tuning")
+
+        # search params
+        self.parser.add_argument('--max_rate', type=float, default=0.7, help="define search space")
+        self.parser.add_argument('--affine', type=float, default=0, help="define search space")
+        self.parser.add_argument('--compress_schedule_path', type=str, default="compress_config/mbv1_imagenet.yaml", help="path to compression schedule")
+        self.parser.add_argument('--flops_target', type=float, default=0.5, help="flops constraints for pruning")
+        self.parser.add_argument('--output_file', type=str, default="mbv1.txt", help="path to compression schedule")
+
         self.initialized = True
-    
+
     def parse(self, save=True):
         if not self.initialized:
             self.initialize()

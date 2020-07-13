@@ -33,6 +33,7 @@ class MobileNet(nn.Module):
         self.bn1 = nn.BatchNorm2d(32)
         self.layers = self._make_layers(in_planes=32)
         self.linear = nn.Linear(1024, num_classes)
+        self.relu = nn.ReLU()
 
     def _make_layers(self, in_planes):
         layers = []
@@ -44,7 +45,7 @@ class MobileNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.relu(self.bn1(self.conv1(x)))
         out = self.layers(out)
         out = F.avg_pool2d(out, 7)
         out = out.view(out.size(0), -1)

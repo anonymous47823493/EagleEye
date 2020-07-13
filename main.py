@@ -1,3 +1,9 @@
+#  ------------------------------------------------------------------
+#  Author: Bowen Wu
+#  Email: wubw6@mail2.sysu.edu.cn
+#  Affiliation: Sun Yat-sen University, Guangzhou
+#  Date: 13 JULY 2020
+#  ------------------------------------------------------------------
 import os
 import torch
 from options.base_options import BaseOptions
@@ -40,7 +46,7 @@ def main():
     del net
     #####################  Evaluate Pruned Model  ####################
     net = ModelWrapper(opt)
-    net.load_checkpoint(opt.pruned_model)
+    net.load_checkpoint(opt.checkpoint)
     net = net.to(device)
     flops_after, params_after = model_summary(net.get_compress_part(), dummy_input)
     net.parallel(opt.gpu_ids)
@@ -50,7 +56,7 @@ def main():
     #################### Report #####################
     print('######### Report #########')
     print('Model:{}'.format(opt.model_name))
-    print('Checkpoint:{}'.format(opt.pruned_model))
+    print('Checkpoint:{}'.format(opt.checkpoint))
     print('FLOPs of Original Model:{:.3f}G;Params of Original Model:{:.2f}M'.format(flops_before / 1e9, params_before / 1e6))
     print('FLOPs of Pruned   Model:{:.3f}G;Params of Pruned   Model:{:.2f}M'.format(flops_after / 1e9, params_after / 1e6))
     print('Top-1 Acc of Pruned Model on {}:{}'.format(opt.dataset_name, acc_after['accuracy']))
