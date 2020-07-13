@@ -1,31 +1,61 @@
 # EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning
 
+![Python version support](https://img.shields.io/badge/python-3.7-blue.svg)
+![PyTorch version support](https://img.shields.io/badge/pytorch-1.4.0-red.svg)
 
+PyTorch implementation for *[EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning](https://arxiv.org/abs/2007.02491)*
+
+[Bailin Li,](https://github.com/bezorro) [Bowen Wu](https://github.com/Bowenwu1), Jiang Su, [Guangrun Wang](https://wanggrun.github.io/projects/zw), [Liang Lin](http://www.linliang.net/)
+
+Presented at [ECCV 2020 (Oral)](https://eccv2020.eu/accepted-papers/)
 
 ![pipeline](fig/eye.png)
 
+## Citation
 
-## Results
+If you use EagleEye in your research, please consider citing:
 
-### Quantitative analysis of correlation
+```
+@misc{li2020eagleeye,
+    title={EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning},
+    author={Bailin Li and Bowen Wu and Jiang Su and Guangrun Wang and Liang Lin},
+    year={2020},
+    eprint={2007.02491},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV}
+}
+```
 
-Correlation between evaluation and fine-tuning accuracy with different pruning ratios (MobileNet V1 on ImageNet classification Top-1 results)
+## Code Release Schedule
 
-![corr](fig/cor_fix_flops.png)
+- [x] Inference Code
+- [ ] Pruning Strategy Generation
+- [ ] Adaptive-BN-based Candidate Evaluation of Pruning Strategy
+- [ ] Finetuning of Pruned Model
 
-### Results on ImageNet
+## Adaptive-BN-based Candidate Evaluation
 
-| Model | FLOPs | Top-1 Acc |
-| ---   | ----  |  -------  |
-| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%|
-| MobileNetV1 | 284M | 70.9% |
+For the ease of your own implementation, here we present the key code for proposed Adaptive-BN-based Candidate Evaluation. The official implementation will be released soon.
 
-### Results on CIFAR-10
+```python
+def eval_pruning_strategy(model, pruning_strategy, dataloader_train):
+   # Apply filter pruning to trained model
+   pruned_model = prune(model, pruning_strategy)
 
-| Model | FLOPs | Top-1 Acc |
-| ---   | ----  |  -----    |
-| ResNet-56 | 62.23M | 94.66% |
-| MobileNetV1 | 26.5M<br>12.1M<br>3.3M | 91.89% <br> 91.44% <br> 88.01% |
+   # Adaptive-BN
+   pruned_model.train()
+   max_iter = 50
+   with torch.no_grad():
+      for iter_in_epoch, sample in enumerate(dataloader_train):
+            pruned_model.forward(sample)
+            if iter_in_epoch > max_iter:
+                break
+
+   # Eval top-1 accuracy for pruned model
+   acc = pruned_model.get_val_acc()
+   return acc
+```
+
 ## Setup
 
 1. **Prepare Data**
@@ -73,7 +103,6 @@ optional arguments:
 ```
 
 
-
 **For ResNet50:**
 
 ```shell
@@ -102,8 +131,6 @@ python3 main.py \
 --num_workers 20
 ```
 
-
-
 After running above program, the output looks like below:
 
 ```
@@ -115,4 +142,27 @@ FLOPs of Pruned   Model:2.057G;Params of Pruned   Model:14.37M
 Top-1 Acc of Pruned Model on imagenet:0.76366
 ##########################
 ```
+
+
+## Results
+
+### Quantitative analysis of correlation
+
+Correlation between evaluation and fine-tuning accuracy with different pruning ratios (MobileNet V1 on ImageNet classification Top-1 results)
+
+![corr](fig/cor_fix_flops.png)
+
+### Results on ImageNet
+
+| Model | FLOPs | Top-1 Acc | Top-5 Acc | Checkpoint |
+| ---   | ----  |  -------  | --------  | ---------------- |
+| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% | [resnet50_75flops.pth](https://www.dropbox.com/s/ij6a6xbbtyfozc8/resnet50_75flops.pth?dl=0) <br> [resnet50_50flops.pth](https://www.dropbox.com/s/czc5hl7zjl2d146/resnet50_50flops.pth?dl=0) <br> [resnet50_25flops.pth](https://www.dropbox.com/s/ezdmjvlxx7pgrpo/resnet50_25flops.pth?dl=0) |
+| MobileNetV1 | 284M | 70.9% |  89.62% | [mobilenetv1_50flops.pth](https://www.dropbox.com/s/80o2fxcc63z59qw/mobilenetv1_50flops_latest.pth?dl=0) |
+
+### Results on CIFAR-10
+
+| Model | FLOPs | Top-1 Acc |
+| ---   | ----  |  -----    |
+| ResNet-50 | 62.23M | 94.66% |
+| MobileNetV1 | 26.5M<br>12.1M<br>3.3M | 91.89% <br> 91.44% <br> 88.01% |
 
