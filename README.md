@@ -1,7 +1,7 @@
 # EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning
 
-![Python version support](https://img.shields.io/badge/python-3.7-blue.svg)
-![PyTorch version support](https://img.shields.io/badge/pytorch-1.4.0-red.svg)
+![Python version support](https://img.shields.io/badge/python-3.6-blue.svg)
+![PyTorch version support](https://img.shields.io/badge/pytorch-1.1.0-red.svg)
 
 PyTorch implementation for *[EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning](https://arxiv.org/abs/2007.02491)*
 
@@ -139,11 +139,17 @@ python3 search.py \
 
 ```
 
-### 2. Finetuning of Pruned Model
+### 2. Candidate Selection
+
+```
+python choose_strategy.py log.txt
+```
+
+### 3. Finetuning of Pruned Model
 
 Coming soon...
 
-### 3. Inference of Pruned Model
+### 4. Inference of Pruned Model
 
 **For ResNet50:**
 
