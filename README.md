@@ -118,7 +118,7 @@ optional arguments:
                         path to compression schedule
 ```
 
-### Adaptive-BN-based Searching for Pruning Strategy
+### 1. Adaptive-BN-based Searching for Pruning Strategy
 
 ```shell
 python3 search.py \
@@ -139,7 +139,11 @@ python3 search.py \
 
 ```
 
-### Inference of Pruned Model
+### 2. Finetuning of Pruned Model
+
+Coming soon...
+
+### 3. Inference of Pruned Model
 
 **For ResNet50:**
 
