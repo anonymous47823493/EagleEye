@@ -1,0 +1,158 @@
+version: 1
+pruners:
+
+  pruner_base_0:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0
+    weights: [
+              conv1.weight
+              ]
+
+  pruner_base_1:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0
+    weights: [
+              layers.0.conv2.weight
+              ]
+  pruner_base_2:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0
+    weights: [
+              layers.1.conv2.weight
+              ]
+  pruner_base_3:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.1
+    weights: [
+              layers.2.conv2.weight
+              ]
+  pruner_base_4:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.3
+    weights: [
+              layers.3.conv2.weight
+              ]
+  pruner_base_5:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.3
+    weights: [
+              layers.4.conv2.weight
+              ]
+  pruner_base_6:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.2
+    weights: [
+              layers.5.conv2.weight
+              ]
+  pruner_base_7:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.2
+    weights: [
+              layers.6.conv2.weight
+              ]
+  pruner_base_8:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.3
+    weights: [
+              layers.7.conv2.weight
+              ]
+  pruner_base_9:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.2
+    weights: [
+              layers.8.conv2.weight
+              ]
+  pruner_base_10:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.1
+    weights: [
+              layers.9.conv2.weight
+              ]
+  pruner_base_11:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.1
+    weights: [
+              layers.10.conv2.weight
+              ]
+  pruner_base_12:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.3
+    weights: [
+              layers.11.conv2.weight
+              ]
+  pruner_base_13:
+    class: 'L1RankedStructureParameterPruner'
+    group_type: Filters
+    desired_sparsity: 0.2
+    weights: [
+              layers.12.conv2.weight
+              ]
+policies:
+  - pruner:
+      instance_name : pruner_base_0
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_1
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_2
+    epochs: [1]
+  
+  - pruner:
+      instance_name : pruner_base_3
+    epochs: [1]
+  
+  - pruner:
+      instance_name : pruner_base_4
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_5
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_6
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_7
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_8
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_9
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_10
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_11
+    epochs: [1]
+  
+  - pruner:
+      instance_name : pruner_base_12
+    epochs: [1]
+
+  - pruner:
+      instance_name : pruner_base_13
+    epochs: [1]

@@ -1,4 +1,5 @@
 # EagleEye: Fast Sub-net Evaluation for Efficient Neural Network Pruning
+
 ![Python version support](https://img.shields.io/badge/python-3.7-blue.svg)
 ![PyTorch version support](https://img.shields.io/badge/pytorch-1.4.0-red.svg)
 
@@ -75,19 +76,23 @@ def eval_pruning_strategy(model, pruning_strategy, dataloader_train):
 
 ```shell
 usage: main.py [-h] [--model_name MODEL_NAME] [--num_classes NUM_CLASSES]
-               [--pruned_model PRUNED_MODEL] [--gpu_ids GPU_IDS [GPU_IDS ...]]
+               [--checkpoint CHECKPOINT] [--gpu_ids GPU_IDS [GPU_IDS ...]]
                [--batch_size BATCH_SIZE] [--dataset_path DATASET_PATH]
                [--dataset_name DATASET_NAME] [--num_workers NUM_WORKERS]
+               [--lr LR] [--weight_decay WEIGHT_DECAY] [--momentum MOMENTUM]
+               [--max_rate MAX_RATE] [--affine AFFINE]
+               [--compress_schedule_path COMPRESS_SCHEDULE_PATH]
+               [--flops_target FLOPS_TARGET] [--output_file OUTPUT_FILE]
 
 optional arguments:
   -h, --help            show this help message and exit
   --model_name MODEL_NAME
                         what kind of model you are using. Only support
-                        `resnet50` and `mobilenetv1`.
+                        `resnet50`, `mobilenetv1` and `mobilenetv1_imagenet`
   --num_classes NUM_CLASSES
                         num of class label
-  --pruned_model PRUNED_MODEL
-                        path to pruned model state dict
+  --checkpoint CHECKPOINT
+                        path to model state dict
   --gpu_ids GPU_IDS [GPU_IDS ...]
                         GPU ids.
   --batch_size BATCH_SIZE
@@ -99,7 +104,42 @@ optional arguments:
                         `get_dataloaders` function
   --num_workers NUM_WORKERS
                         Number of workers used in dataloading
+  --lr LR               learning rate while fine-tuning
+  --weight_decay WEIGHT_DECAY
+                        weight decay while fine-tuning
+  --momentum MOMENTUM   momentum while fine-tuning
+  --max_rate MAX_RATE   define search space
+  --affine AFFINE       define search space
+  --compress_schedule_path COMPRESS_SCHEDULE_PATH
+                        path to compression schedule
+  --flops_target FLOPS_TARGET
+                        flops constraints for pruning
+  --output_file OUTPUT_FILE
+                        path to compression schedule
 ```
+
+### Adaptive-BN-based Searching for Pruning Strategy
+
+```shell
+python3 search.py \
+--model_name mobilenetv1 \
+--num_classes 1000 \
+--checkpoint models/ckpt/imagenet_mobilenet_726.pth \
+--gpu_ids 5 \
+--batch_size 128 \
+--dataset_path /data/imagenet \
+--dataset_name imagenet_train_val_split \
+--num_workers 4 \
+--flops_target 0.5 \
+--max_rate 0.7 \
+--affine 0 \
+--flops_target 0.5 \
+--output_file log.txt \
+--compress_schedule_path {compress_config/mbv1_imagenet.yaml|/compress_config/res50_imagenet.yaml}
+
+```
+
+### Inference of Pruned Model
 
 **For ResNet50:**
 
@@ -107,7 +147,7 @@ optional arguments:
 python3 main.py \
 --model_name resnet50 \
 --num_classes 1000 \
---pruned_model models/ckpt/{resnet50_25flops.pth|resnet50_50flops.pth|resnet50_72flops.pth} \
+--checkpoint models/ckpt/{resnet50_25flops.pth|resnet50_50flops.pth|resnet50_72flops.pth} \
 --gpu_ids 4 \
 --batch_size 512 \
 --dataset_path {PATH_TO_IMAGENET} \
@@ -121,7 +161,7 @@ python3 main.py \
 python3 main.py \
 --model_name mobilenetv1 \
 --num_classes 1000 \
---pruned_model models/ckpt/mobilenetv1_50flops.pth \
+--checkpoint models/ckpt/mobilenetv1_50flops.pth \
 --gpu_ids 4 \
 --batch_size 512 \
 --dataset_path {PATH_TO_IMAGENET} \
@@ -140,6 +180,7 @@ FLOPs of Pruned   Model:2.057G;Params of Pruned   Model:14.37M
 Top-1 Acc of Pruned Model on imagenet:0.76366
 ##########################
 ```
+
 
 ## Results
 
@@ -162,3 +203,4 @@ Correlation between evaluation and fine-tuning accuracy with different pruning r
 | ---   | ----  |  -----    |
 | ResNet-50 | 62.23M | 94.66% |
 | MobileNetV1 | 26.5M<br>12.1M<br>3.3M | 91.89% <br> 91.44% <br> 88.01% |
+

@@ -1,3 +1,9 @@
+#  ------------------------------------------------------------------
+#  Author: Bowen Wu
+#  Email: wubw6@mail2.sysu.edu.cn
+#  Affiliation: Sun Yat-sen University, Guangzhou
+#  Date: 13 JULY 2020
+#  ------------------------------------------------------------------
 import os
 import sys
 
@@ -7,6 +13,7 @@ import torchvision
 import torchvision.transforms as transforms
 import shutil
 import torch.optim as optim
+import numpy as np
 
 
 class ModelWrapper(nn.Module):
@@ -19,6 +26,7 @@ class ModelWrapper(nn.Module):
             from .resnet import resnet50
             self._net = resnet50(num_classes=opt.num_classes)
 
+        self.optimizer = optim.SGD(self._net.parameters(),lr=opt.lr,momentum=opt.momentum,weight_decay=opt.weight_decay)
         self._criterion = nn.CrossEntropyLoss()
     
     def forward(self, x): # test forward
@@ -58,6 +66,8 @@ class ModelWrapper(nn.Module):
         total = 0
         correct = 0
 
+        top_5_acc = 0
+
         self._net.eval()
         # print('==> evaluating accuracy')
         with torch.no_grad():
@@ -65,10 +75,15 @@ class ModelWrapper(nn.Module):
                 outputs = self.forward(sample)
                 _, predicted = outputs.max(1)
                 targets = sample[1].to(device)
+
+                prec5 = accuracy(outputs.data, targets.data, topk=(5,))
+                prec5 = prec5[0]
+                top_5_acc += prec5.item() * targets.size(0)
+
                 correct += predicted.eq(targets).sum().item()
                 total += targets.size(0)
         acc = correct / total
-
+        top_5_acc /= total
         scores = {'accuracy' : round(acc,3)}
 
         return scores
@@ -111,3 +126,26 @@ class ModelWrapper(nn.Module):
                 module.in_features  = module.weight.size(1)
 
         net.load_state_dict(checkpoint)
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    batch_size = target.size(0)
+    num = output.size(1)
+    target_topk = []
+    appendices = []
+    for k in topk:
+        if k <= num:
+            target_topk.append(k)
+        else:
+            appendices.append([0.0])
+    topk = target_topk
+    maxk = max(topk)
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res + appendices
