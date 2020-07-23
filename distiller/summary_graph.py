@@ -22,6 +22,7 @@ import torch
 import torch.jit as jit
 import logging
 from collections import OrderedDict
+
 msglogger = logging.getLogger()
 
 
@@ -31,12 +32,12 @@ def onnx_name_2_pytorch_name(name, op_type):
     #   ResNet/Sequential[layer3]/BasicBlock[0]/ReLU[relu].1 ==> layer3.0.relu.1
 
     # First see if there's an instance identifier
-    instance = ''
-    if name.find('.') >= 0:
-        instance = name[name.find('.')+1:]
+    instance = ""
+    if name.find(".") >= 0:
+        instance = name[name.find(".") + 1 :]
 
     # Next, split by square brackets
-    name_parts = re.findall('\[.*?\]', name)
+    name_parts = re.findall("\[.*?\]", name)
     name_parts = [part[1:-1] for part in name_parts]
 
     # If name doesn't have the pattern above, it probably means the op was called via
@@ -44,7 +45,7 @@ def onnx_name_2_pytorch_name(name, op_type):
     #   x = x.view(...)
     #   x = F.relu(x)
     # In this case, to have a meaningful name, we use the op type
-    new_name = ('.'.join(name_parts) if len(name_parts) > 0 else op_type) + instance
+    new_name = (".".join(name_parts) if len(name_parts) > 0 else op_type) + instance
 
     msglogger.debug("new sgraph node {} {} {}".format(name, op_type, new_name))
     return new_name
@@ -91,16 +92,21 @@ class SummaryGraph(object):
         out = self.bn2(out)
         out = self.relu(out)    <=== Second use of self.relu
     """
-    Edge = collections.namedtuple('Edge', 'src dst')
+
+    Edge = collections.namedtuple("Edge", "src dst")
 
     def __init__(self, model, dummy_input):
         self._src_model = model
         model_clone = distiller.make_non_parallel_copy(model)
         with torch.onnx.set_training(model_clone, False):
-            
+
             device = next(model_clone.parameters()).device
-            dummy_input = distiller.convert_tensors_recursively_to(dummy_input, device=device)
-            trace, _ = jit.get_trace_graph(model_clone, dummy_input, _force_outplace=True)
+            dummy_input = distiller.convert_tensors_recursively_to(
+                dummy_input, device=device
+            )
+            trace, _ = jit.get_trace_graph(
+                model_clone, dummy_input, _force_outplace=True
+            )
 
             # Let ONNX do the heavy lifting: fusing the convolution nodes; fusing the nodes
             # composing a GEMM operation; etc.
@@ -125,31 +131,46 @@ class SummaryGraph(object):
                 # using both name and type
                 # (this happens, for example, when an operator is called via some functional API and
                 # not via a module)
-                same = [op for op in self.ops.values() if
-                        op['orig-name'] + op['type'] == new_op['orig-name'] + new_op['type']]
+                same = [
+                    op
+                    for op in self.ops.values()
+                    if op["orig-name"] + op["type"]
+                    == new_op["orig-name"] + new_op["type"]
+                ]
                 if len(same) > 0:
-                    new_op['name'] += "." + str(len(same))
+                    new_op["name"] += "." + str(len(same))
 
-                new_op['name'] = onnx_name_2_pytorch_name(new_op['name'], new_op['type'])
-                assert len(new_op['name']) > 0
+                new_op["name"] = onnx_name_2_pytorch_name(
+                    new_op["name"], new_op["type"]
+                )
+                assert len(new_op["name"]) > 0
 
-                if new_op['name'] in self.ops:
+                if new_op["name"] in self.ops:
                     # This is a patch.
                     # ONNX names integrate the node type, while we don't (design bug).
                     # This means that while parsing the ONNX graph we might find two nodes with the "same" name.
                     # This patch increments the instance name, but this may break in the future.
-                    new_op['name'] = increment_instance(new_op['name'])
-                self.ops[new_op['name']] = new_op
+                    new_op["name"] = increment_instance(new_op["name"])
+                self.ops[new_op["name"]] = new_op
 
                 for input_ in node.inputs():
                     self.__add_input(new_op, input_)
-                    self.edges.append(SummaryGraph.Edge(input_.uniqueName(), new_op['name']))
+                    self.edges.append(
+                        SummaryGraph.Edge(input_.uniqueName(), new_op["name"])
+                    )
 
                 for output in node.outputs():
                     self.__add_output(new_op, output)
-                    self.edges.append(SummaryGraph.Edge(new_op['name'], output.uniqueName()))
+                    self.edges.append(
+                        SummaryGraph.Edge(new_op["name"], output.uniqueName())
+                    )
 
-                new_op['attrs'] = OrderedDict([(attr_name, node[attr_name]) for attr_name in node.attributeNames()])
+                new_op["attrs"] = OrderedDict(
+                    [
+                        (attr_name, node[attr_name])
+                        for attr_name in node.attributeNames()
+                    ]
+                )
 
         self.add_macs_attr()
         self.add_footprint_attr()
@@ -158,27 +179,27 @@ class SummaryGraph(object):
 
     def __create_op(self, onnx_node):
         op = OrderedDict()
-        op['name'] = onnx_node.scopeName()
-        op['orig-name'] = onnx_node.scopeName()
-        op['type'] = onnx_node.kind().lstrip('::onnx')
-        op['inputs'] = []
-        op['outputs'] = []
-        op['params'] = []
+        op["name"] = onnx_node.scopeName()
+        op["orig-name"] = onnx_node.scopeName()
+        op["type"] = onnx_node.kind().lstrip("::onnx")
+        op["inputs"] = []
+        op["outputs"] = []
+        op["params"] = []
         return op
 
     def __add_input(self, op, n):
         param = self.__add_param(n)
         if param is None:
             return
-        if param['id'] not in op['inputs']:
-            op['inputs'].append(param['id'])
+        if param["id"] not in op["inputs"]:
+            op["inputs"].append(param["id"])
 
     def __add_output(self, op, n):
         param = self.__add_param(n)
         if param is None:
             return
-        if param['id'] not in op['outputs']:
-            op['outputs'].append(param['id'])
+        if param["id"] not in op["outputs"]:
+            op["outputs"].append(param["id"])
 
     def __add_param(self, n):
         if n.uniqueName() not in self.params:
@@ -190,19 +211,19 @@ class SummaryGraph(object):
 
     def __tensor_desc(self, n):
         tensor = OrderedDict()
-        tensor['id'] = n.uniqueName()
+        tensor["id"] = n.uniqueName()
         try:
             # try parsing the FM tensor type.  For example: Float(1, 64, 8, 8)
             s = str(n.node())
-            s = s[s.find('(')+1: s.find(')')]
-            tensor['shape'] = tuple(map(lambda x: int(x), s.split(',')))
+            s = s[s.find("(") + 1 : s.find(")")]
+            tensor["shape"] = tuple(map(lambda x: int(x), s.split(",")))
         except ValueError:
             # Size not specified in type
-            tensor['shape'] = 0,
+            tensor["shape"] = (0,)
         return tensor
 
     def param_shape(self, param_id):
-        return self.params[param_id]['shape']
+        return self.params[param_id]["shape"]
 
     @staticmethod
     def volume(dims):
@@ -213,66 +234,81 @@ class SummaryGraph(object):
 
     def add_macs_attr(self):
         for op in self.ops.values():
-            op['attrs']['MACs'] = 0
-            if op['type'] == 'Conv':
-                conv_out = op['outputs'][0]
-                conv_in = op['inputs'][0]
-                conv_w = op['attrs']['kernel_shape']
-                groups = op['attrs']['group']
+            op["attrs"]["MACs"] = 0
+            if op["type"] == "Conv":
+                conv_out = op["outputs"][0]
+                conv_in = op["inputs"][0]
+                conv_w = op["attrs"]["kernel_shape"]
+                groups = op["attrs"]["group"]
                 ofm_vol = self.param_volume(conv_out)
                 try:
                     # MACs = volume(OFM) * (#IFM * K^2) / #Groups
-                    op['attrs']['MACs'] = int(ofm_vol * SummaryGraph.volume(conv_w) * self.params[conv_in]['shape'][1] / groups)
+                    op["attrs"]["MACs"] = int(
+                        ofm_vol
+                        * SummaryGraph.volume(conv_w)
+                        * self.params[conv_in]["shape"][1]
+                        / groups
+                    )
                 except IndexError:
                     # Todo: change the method for calculating MACs
-                    msglogger.error("An input to a Convolutional layer is missing shape information "
-                                    "(MAC values will be wrong)")
-                    msglogger.error("For details see https://github.com/NervanaSystems/distiller/issues/168")
-                    op['attrs']['MACs'] = 0
-            elif op['type'] == 'Gemm':
-                conv_out = op['outputs'][0]
-                conv_in = op['inputs'][0]
+                    msglogger.error(
+                        "An input to a Convolutional layer is missing shape information "
+                        "(MAC values will be wrong)"
+                    )
+                    msglogger.error(
+                        "For details see https://github.com/NervanaSystems/distiller/issues/168"
+                    )
+                    op["attrs"]["MACs"] = 0
+            elif op["type"] == "Gemm":
+                conv_out = op["outputs"][0]
+                conv_in = op["inputs"][0]
                 n_ifm = self.param_shape(conv_in)[1]
                 n_ofm = self.param_shape(conv_out)[1]
                 # MACs = #IFM * #OFM
-                op['attrs']['MACs'] = n_ofm * n_ifm
+                op["attrs"]["MACs"] = n_ofm * n_ifm
 
     def add_footprint_attr(self):
         for op in self.ops.values():
-            op['attrs']['footprint'] = 0
-            if op['type'] in ['Conv', 'Gemm', 'MaxPool']:
-                conv_out = op['outputs'][0]
-                conv_in = op['inputs'][0]
+            op["attrs"]["footprint"] = 0
+            if op["type"] in ["Conv", "Gemm", "MaxPool"]:
+                conv_out = op["outputs"][0]
+                conv_in = op["inputs"][0]
                 ofm_vol = self.param_volume(conv_out)
                 ifm_vol = self.param_volume(conv_in)
-                if op['type'] == 'Conv' or op['type'] == 'Gemm':
-                    if op['type'] == 'Conv':
-                        kernel_size =  self.volume(op['attrs']['kernel_shape'])
-                        group = op['attrs']['group']
+                if op["type"] == "Conv" or op["type"] == "Gemm":
+                    if op["type"] == "Conv":
+                        kernel_size = self.volume(op["attrs"]["kernel_shape"])
+                        group = op["attrs"]["group"]
                     else:
                         kernel_size, group = 1, 1
                     n_ifm = self.param_shape(conv_in)[1] / group
-                    n_ofm = self.param_shape(conv_out)[1] 
+                    n_ofm = self.param_shape(conv_out)[1]
                     weights_vol = kernel_size * n_ifm * n_ofm
-                    op['attrs']['footprint'] = ofm_vol + ifm_vol + weights_vol
-                    op['attrs']['fm_vol'] = ofm_vol + ifm_vol
-                    op['attrs']['weights_vol'] = weights_vol
-                elif op['type'] == 'MaxPool':
-                    op['attrs']['footprint'] = ofm_vol + ifm_vol
+                    op["attrs"]["footprint"] = ofm_vol + ifm_vol + weights_vol
+                    op["attrs"]["fm_vol"] = ofm_vol + ifm_vol
+                    op["attrs"]["weights_vol"] = weights_vol
+                elif op["type"] == "MaxPool":
+                    op["attrs"]["footprint"] = ofm_vol + ifm_vol
 
     def add_arithmetic_intensity_attr(self):
         for op in self.ops.values():
-            if op['attrs']['footprint'] == 0:
-                op['attrs']['ai'] = 0
+            if op["attrs"]["footprint"] == 0:
+                op["attrs"]["ai"] = 0
             else:
                 # integers are enough, and note that we also round up
-                op['attrs']['ai'] = ((op['attrs']['MACs']+0.5*op['attrs']['footprint']) // op['attrs']['footprint'])
+                op["attrs"]["ai"] = (
+                    op["attrs"]["MACs"] + 0.5 * op["attrs"]["footprint"]
+                ) // op["attrs"]["footprint"]
 
     def get_attr(self, attr, f=lambda op: True):
-        return [op['attrs'][attr] for op in self.ops.values() if attr in op['attrs'] and f(op)]
+        return [
+            op["attrs"][attr]
+            for op in self.ops.values()
+            if attr in op["attrs"] and f(op)
+        ]
 
     def get_ops(self, attr, f=lambda op: True):
-        return [op for op in self.ops.values() if attr in op['attrs'] and f(op)]
+        return [op for op in self.ops.values() if attr in op["attrs"] and f(op)]
 
     def find_op(self, lost_op_name):
         return self.ops.get(distiller.normalize_module_name(lost_op_name), None)
@@ -286,12 +322,18 @@ class SummaryGraph(object):
             done_list = []
 
         if isinstance(op, dict):
-            preds = [edge.src for edge in self.edges if (edge.dst == op['name'] and
-                                                         edge.src not in done_list)]
+            preds = [
+                edge.src
+                for edge in self.edges
+                if (edge.dst == op["name"] and edge.src not in done_list)
+            ]
             done_list += preds
         else:
-            preds = [edge.src for edge in self.edges if (edge.dst == op and
-                                                         edge.src not in done_list)]
+            preds = [
+                edge.src
+                for edge in self.edges
+                if (edge.dst == op and edge.src not in done_list)
+            ]
             done_list += preds
 
         if depth == 1:
@@ -299,11 +341,13 @@ class SummaryGraph(object):
         else:
             ret = []
             for predecessor in preds:
-                ret += self.predecessors(predecessor, depth-1, done_list)
+                ret += self.predecessors(predecessor, depth - 1, done_list)
 
         return [distiller.denormalize_module_name(self._src_model, x) for x in ret]
 
-    def predecessors_f(self, node_name, predecessors_types, done_list=None, logging=None):
+    def predecessors_f(
+        self, node_name, predecessors_types, done_list=None, logging=None
+    ):
         """Returns a list of <op>'s predecessors, if they match the <predecessors_types> criteria.
         """
         node_name = distiller.normalize_module_name(node_name)
@@ -313,7 +357,9 @@ class SummaryGraph(object):
             node_is_an_op = False
             node = self.find_param(node_name)
             if node is None:
-                msglogger.warning("predecessors_f: Could not find node {}".format(node_name))
+                msglogger.warning(
+                    "predecessors_f: Could not find node {}".format(node_name)
+                )
                 return []
 
         if done_list is None:
@@ -327,21 +373,31 @@ class SummaryGraph(object):
         if node_is_an_op:
             # We check if we found the type of node we're looking for,
             # and that this is not the first node in our search.
-            if node['type'] in predecessors_types and len(done_list) > 1:
+            if node["type"] in predecessors_types and len(done_list) > 1:
                 return [distiller.denormalize_module_name(self._src_model, node_name)]
 
             # This is an operation node
-            preds = [edge.src for edge in self.edges if (edge.dst == node_name and
-                                                         edge.src not in done_list)]
+            preds = [
+                edge.src
+                for edge in self.edges
+                if (edge.dst == node_name and edge.src not in done_list)
+            ]
         else:
             # This is a data node
-            preds = [edge.src for edge in self.edges if (edge.dst == node_name and
-                                                         edge.src not in done_list)]
+            preds = [
+                edge.src
+                for edge in self.edges
+                if (edge.dst == node_name and edge.src not in done_list)
+            ]
         ret = []
         for predecessor in preds:
-            ret += self.predecessors_f(predecessor, predecessors_types, done_list, logging)
+            ret += self.predecessors_f(
+                predecessor, predecessors_types, done_list, logging
+            )
 
-        return [distiller.denormalize_module_name(self._src_model, node) for node in ret]
+        return [
+            distiller.denormalize_module_name(self._src_model, node) for node in ret
+        ]
 
     def successors(self, node, depth, done_list=None):
         """Returns a list of <op>'s successors"""
@@ -350,13 +406,19 @@ class SummaryGraph(object):
 
         if isinstance(node, dict):
             # This is an operation node
-            succs = [edge.dst for edge in self.edges if (edge.src == node['name'] and
-                                                         edge.dst not in done_list)]
+            succs = [
+                edge.dst
+                for edge in self.edges
+                if (edge.src == node["name"] and edge.dst not in done_list)
+            ]
             done_list += succs
         else:
             # This is a data node
-            succs = [edge.dst for edge in self.edges if (edge.src == node and
-                                                         edge.dst not in done_list)]
+            succs = [
+                edge.dst
+                for edge in self.edges
+                if (edge.src == node and edge.dst not in done_list)
+            ]
             done_list += succs
 
         if depth == 1:
@@ -364,7 +426,7 @@ class SummaryGraph(object):
         else:
             ret = []
             for successor in succs:
-                ret += self.successors(successor, depth-1, done_list)
+                ret += self.successors(successor, depth - 1, done_list)
 
         return [distiller.denormalize_module_name(self._src_model, x) for x in ret]
 
@@ -384,7 +446,7 @@ class SummaryGraph(object):
             node_is_an_op = False
             node = self.find_param(node_name)
             if node is None:
-                #raise ValueError("something went wrong")
+                # raise ValueError("something went wrong")
                 return []
 
         if done_list is None:
@@ -398,28 +460,38 @@ class SummaryGraph(object):
         if node_is_an_op:
             # We check if we found the type of node we're looking for,
             # and that this is not the first node in our search.
-            if node['type'] in successors_types and len(done_list) > 1:
+            if node["type"] in successors_types and len(done_list) > 1:
                 return [distiller.denormalize_module_name(self._src_model, node_name)]
 
             # This is an operation node
-            succs = [edge.dst for edge in self.edges if (edge.src == node_name and
-                                                         edge.dst not in done_list)]
+            succs = [
+                edge.dst
+                for edge in self.edges
+                if (edge.src == node_name and edge.dst not in done_list)
+            ]
         else:
             # This is a data node
-            succs = [edge.dst for edge in self.edges if (edge.src == node_name and
-                                                         edge.dst not in done_list)]
+            succs = [
+                edge.dst
+                for edge in self.edges
+                if (edge.src == node_name and edge.dst not in done_list)
+            ]
         ret = []
         for successor in succs:
             ret += self.successors_f(successor, successors_types, done_list, logging)
 
-        return [distiller.denormalize_module_name(self._src_model, node) for node in ret]
+        return [
+            distiller.denormalize_module_name(self._src_model, node) for node in ret
+        ]
 
     def named_params_layers(self):
         for param_name, param in self._src_model.named_parameters():
             # remove the extension of param_name, and then normalize it
             # to create a normalized layer name
             normalized_layer_name = distiller.normalize_module_name(
-                '.'.join(param_name.split('.')[:-1]))
+                ".".join(param_name.split(".")[:-1])
+            )
             sgraph_layer_name = distiller.denormalize_module_name(
-                self._src_model, normalized_layer_name)
+                self._src_model, normalized_layer_name
+            )
             yield sgraph_layer_name, param_name, param

@@ -33,8 +33,10 @@ import pkg_resources
 from git import Repo, InvalidGitRepositoryError
 import numpy as np
 import torch
+
 try:
     import lsb_release
+
     HAVE_LSB = True
 except ImportError:
     HAVE_LSB = False
@@ -42,7 +44,7 @@ except ImportError:
 logger = logging.getLogger("app_cfg")
 
 
-def log_execution_env_state(config_paths=None, logdir=None, gitroot='.'):
+def log_execution_env_state(config_paths=None, logdir=None, gitroot="."):
     """Log information about the execution environment.
 
     Files in 'config_paths' will be copied to directory 'logdir'. A common use-case
@@ -65,7 +67,9 @@ def log_execution_env_state(config_paths=None, logdir=None, gitroot='.'):
             repo = Repo(gitroot)
             assert not repo.bare
         except InvalidGitRepositoryError:
-            logger.debug("Cannot find a Git repository.  You probably downloaded an archive of Distiller.")
+            logger.debug(
+                "Cannot find a Git repository.  You probably downloaded an archive of Distiller."
+            )
             return
 
         if repo.is_dirty():
@@ -83,11 +87,15 @@ def log_execution_env_state(config_paths=None, logdir=None, gitroot='.'):
     logger.debug("CUDNN version: %s", torch.backends.cudnn.version())
     logger.debug("Kernel: %s", platform.release())
     if HAVE_LSB:
-        logger.debug("OS: %s", lsb_release.get_lsb_information()['DESCRIPTION'])
+        logger.debug("OS: %s", lsb_release.get_lsb_information()["DESCRIPTION"])
     logger.debug("Python: %s", sys.version)
+
     def _pip_freeze():
-        return {x.key:x.version for x in sorted(pkg_resources.working_set,
-                                                key=operator.attrgetter('key'))}
+        return {
+            x.key: x.version
+            for x in sorted(pkg_resources.working_set, key=operator.attrgetter("key"))
+        }
+
     logger.debug("pip freeze: {}".format(_pip_freeze()))
     log_git_state()
     logger.debug("Command line: %s", " ".join(sys.argv))
@@ -96,24 +104,25 @@ def log_execution_env_state(config_paths=None, logdir=None, gitroot='.'):
         return
 
     # clone configuration files to output directory
-    configs_dest = os.path.join(logdir, 'configs')
+    configs_dest = os.path.join(logdir, "configs")
 
-    if isinstance(config_paths, str) or not hasattr(config_paths, '__iter__'):
+    if isinstance(config_paths, str) or not hasattr(config_paths, "__iter__"):
         config_paths = [config_paths]
     for cpath in config_paths:
         os.makedirs(configs_dest, exist_ok=True)
 
         if os.path.exists(os.path.join(configs_dest, os.path.basename(cpath))):
-            logger.debug('{} already exists in logdir'.format(
-                os.path.basename(cpath) or cpath))
+            logger.debug(
+                "{} already exists in logdir".format(os.path.basename(cpath) or cpath)
+            )
         else:
             try:
                 shutil.copy(cpath, configs_dest)
             except OSError as e:
-                logger.debug('Failed to copy of config file: {}'.format(str(e)))
+                logger.debug("Failed to copy of config file: {}".format(str(e)))
 
 
-def config_pylogger(log_cfg_file, experiment_name, output_dir='logs'):
+def config_pylogger(log_cfg_file, experiment_name, output_dir="logs"):
     """Configure the Python logger.
 
     For each execution of the application, we'd like to create a unique log directory.
@@ -123,17 +132,19 @@ def config_pylogger(log_cfg_file, experiment_name, output_dir='logs'):
     TensorBoard, for example.
     """
     timestr = time.strftime("%Y.%m.%d-%H%M%S")
-    exp_full_name = timestr if experiment_name is None else experiment_name + '___' + timestr
+    exp_full_name = (
+        timestr if experiment_name is None else experiment_name + "___" + timestr
+    )
     logdir = os.path.join(output_dir, exp_full_name)
     if not os.path.exists(logdir):
         os.makedirs(logdir)
-    log_filename = os.path.join(logdir, exp_full_name + '.log')
+    log_filename = os.path.join(logdir, exp_full_name + ".log")
     if os.path.isfile(log_cfg_file):
-        logging.config.fileConfig(log_cfg_file, defaults={'logfilename': log_filename})
+        logging.config.fileConfig(log_cfg_file, defaults={"logfilename": log_filename})
     msglogger = logging.getLogger()
     msglogger.logdir = logdir
     msglogger.log_filename = log_filename
-    msglogger.info('Log file for this run: ' + os.path.realpath(log_filename))
+    msglogger.info("Log file for this run: " + os.path.realpath(log_filename))
 
     # Create a symbollic link to the last log file created (for easier access)
     try:

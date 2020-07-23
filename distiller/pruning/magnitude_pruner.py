@@ -26,6 +26,7 @@ class MagnitudeParameterPruner(_ParameterPruner):
     threshold setting.
 
     """
+
     def __init__(self, name, thresholds, **kwargs):
         """
         Usually, a Pruner is constructed by the compression schedule parser
@@ -45,9 +46,11 @@ class MagnitudeParameterPruner(_ParameterPruner):
         super(MagnitudeParameterPruner, self).__init__(name)
         assert thresholds is not None
         # Make sure there is a default threshold to use
-        assert '*' in thresholds
+        assert "*" in thresholds
         self.thresholds = thresholds
 
     def set_param_mask(self, param, param_name, zeros_mask_dict, meta):
-        threshold = self.thresholds.get(param_name, self.thresholds['*'])
-        zeros_mask_dict[param_name].mask = distiller.threshold_mask(param.data, threshold)
+        threshold = self.thresholds.get(param_name, self.thresholds["*"])
+        zeros_mask_dict[param_name].mask = distiller.threshold_mask(
+            param.data, threshold
+        )

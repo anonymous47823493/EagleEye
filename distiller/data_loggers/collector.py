@@ -27,15 +27,23 @@ from torchnet.meter import AverageValueMeter
 import logging
 from math import sqrt
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import distiller
+
 msglogger = logging.getLogger()
 
-__all__ = ['SummaryActivationStatsCollector', 'RecordsActivationStatsCollector',
-           'QuantCalibrationStatsCollector', 'ActivationHistogramsCollector',
-           'collect_quant_stats', 'collect_histograms',
-           'collector_context', 'collectors_context']
+__all__ = [
+    "SummaryActivationStatsCollector",
+    "RecordsActivationStatsCollector",
+    "QuantCalibrationStatsCollector",
+    "ActivationHistogramsCollector",
+    "collect_quant_stats",
+    "collect_histograms",
+    "collector_context",
+    "collectors_context",
+]
 
 
 class ActivationStatsCollector(object):
@@ -55,6 +63,7 @@ class ActivationStatsCollector(object):
     We can remove some of the slowness, by choosing to log only specific layers or use it only
     during validation or test. This can be achieved using the `classes` argument.
     """
+
     def __init__(self, model, stat_name, classes):
         """
         Args:
@@ -79,7 +88,9 @@ class ActivationStatsCollector(object):
     def value(self):
         """Return a dictionary containing {layer_name: statistic}"""
         activation_stats = OrderedDict()
-        self.model.apply(partial(self._collect_activations_stats, activation_stats=activation_stats))
+        self.model.apply(
+            partial(self._collect_activations_stats, activation_stats=activation_stats)
+        )
         return activation_stats
 
     def start(self):
@@ -98,8 +109,12 @@ class ActivationStatsCollector(object):
         """
         is_leaf_node = len(list(module.children())) == 0
         register_all_class_types = not self.classes
-        if is_leaf_node and (register_all_class_types or (type(module) in self.classes)):
-            self.fwd_hook_handles.append(module.register_forward_hook(self._activation_stats_cb))
+        if is_leaf_node and (
+            register_all_class_types or (type(module) in self.classes)
+        ):
+            self.fwd_hook_handles.append(
+                module.register_forward_hook(self._activation_stats_cb)
+            )
             self._start_counter(module)
 
     def stop(self):
@@ -134,7 +149,7 @@ class ActivationStatsCollector(object):
         """Reset a specific statistic counter - this is subclass-specific code"""
         raise NotImplementedError
 
-    def _collect_activations_stats(self, module, activation_stats, name=''):
+    def _collect_activations_stats(self, module, activation_stats, name=""):
         """Handle new activations - this is subclass-specific code"""
         raise NotImplementedError
 
@@ -146,6 +161,7 @@ class SummaryActivationStatsCollector(ActivationStatsCollector):
     light-weight and quicker than collecting a record per activation.
     The statistic function is configured in the constructor.
     """
+
     def __init__(self, model, stat_name, summary_fn, classes=[torch.nn.ReLU]):
         super(SummaryActivationStatsCollector, self).__init__(model, stat_name, classes)
         self.summary_fn = summary_fn
@@ -159,33 +175,42 @@ class SummaryActivationStatsCollector(ActivationStatsCollector):
             getattr(module, self.stat_name).add(self.summary_fn(output.data))
         except RuntimeError as e:
             if "The expanded size of the tensor" in e.args[0]:
-                raise ValueError("ActivationStatsCollector: a module ({} - {}) was encountered twice during model.apply().\n"
-                                 "This is an indication that your model is using the same module instance, "
-                                 "in multiple nodes in the graph.  This usually occurs with ReLU modules: \n"
-                                 "For example in TorchVision's ResNet model, self.relu = nn.ReLU(inplace=True) is "
-                                 "instantiated once, but used multiple times.  This is not permissible when using "
-                                 "instances of ActivationStatsCollector.".
-                                 format(module.distiller_name, type(module)))
+                raise ValueError(
+                    "ActivationStatsCollector: a module ({} - {}) was encountered twice during model.apply().\n"
+                    "This is an indication that your model is using the same module instance, "
+                    "in multiple nodes in the graph.  This usually occurs with ReLU modules: \n"
+                    "For example in TorchVision's ResNet model, self.relu = nn.ReLU(inplace=True) is "
+                    "instantiated once, but used multiple times.  This is not permissible when using "
+                    "instances of ActivationStatsCollector.".format(
+                        module.distiller_name, type(module)
+                    )
+                )
             else:
-                msglogger.info("Exception in _activation_stats_cb: {} {}".format(module.distiller_name, type(module)))
+                msglogger.info(
+                    "Exception in _activation_stats_cb: {} {}".format(
+                        module.distiller_name, type(module)
+                    )
+                )
                 raise
 
     def _start_counter(self, module):
         if not hasattr(module, self.stat_name):
             setattr(module, self.stat_name, AverageValueMeter())
             # Assign a name to this summary
-            if hasattr(module, 'distiller_name'):
-                getattr(module, self.stat_name).name = '_'.join((self.stat_name, module.distiller_name))
+            if hasattr(module, "distiller_name"):
+                getattr(module, self.stat_name).name = "_".join(
+                    (self.stat_name, module.distiller_name)
+                )
             else:
-                getattr(module, self.stat_name).name = '_'.join((self.stat_name,
-                                                                 module.__class__.__name__,
-                                                                 str(id(module))))
+                getattr(module, self.stat_name).name = "_".join(
+                    (self.stat_name, module.__class__.__name__, str(id(module)))
+                )
 
     def _reset_counter(self, module):
         if hasattr(module, self.stat_name):
             getattr(module, self.stat_name).reset()
 
-    def _collect_activations_stats(self, module, activation_stats, name=''):
+    def _collect_activations_stats(self, module, activation_stats, name=""):
         if hasattr(module, self.stat_name):
             mean = getattr(module, self.stat_name).mean
             if isinstance(mean, torch.Tensor):
@@ -195,7 +220,7 @@ class SummaryActivationStatsCollector(ActivationStatsCollector):
     def save(self, fname):
         """Save the records to an Excel workbook, with one worksheet per layer.
         """
-        fname = ".".join([fname, 'xlsx'])
+        fname = ".".join([fname, "xlsx"])
         try:
             os.remove(fname)
         except OSError:
@@ -205,7 +230,9 @@ class SummaryActivationStatsCollector(ActivationStatsCollector):
         with xlsxwriter.Workbook(fname) as workbook:
             worksheet = workbook.add_worksheet(self.stat_name)
             col_names = []
-            for col, (module_name, module_summary_data) in enumerate(records_dict.items()):
+            for col, (module_name, module_summary_data) in enumerate(
+                records_dict.items()
+            ):
                 if not isinstance(module_summary_data, list):
                     module_summary_data = [module_summary_data]
                 worksheet.write_column(1, col, module_summary_data)
@@ -223,14 +250,18 @@ class RecordsActivationStatsCollector(ActivationStatsCollector):
 
     For obvious reasons, this is slower than SummaryActivationStatsCollector.
     """
+
     def __init__(self, model, classes=[torch.nn.ReLU]):
-        super(RecordsActivationStatsCollector, self).__init__(model, "statistics_records", classes)
+        super(RecordsActivationStatsCollector, self).__init__(
+            model, "statistics_records", classes
+        )
 
     def _activation_stats_cb(self, module, input, output):
         """Record the activation sparsity of 'module'
 
         This is a callback from the forward() of 'module'.
         """
+
         def to_np(stats):
             if isinstance(stats, tuple):
                 return stats[0].detach().cpu().numpy()
@@ -252,25 +283,25 @@ class RecordsActivationStatsCollector(ActivationStatsCollector):
             batch_std_list = to_np(torch.std(act, dim=1)).tolist()
         batch_l2_list = to_np(torch.norm(act, p=2, dim=1)).tolist()
 
-        module.statistics_records['min'].extend(batch_min_list)
-        module.statistics_records['max'].extend(batch_max_list)
-        module.statistics_records['mean'].extend(batch_mean_list)
-        module.statistics_records['std'].extend(batch_std_list)
-        module.statistics_records['l2'].extend(batch_l2_list)
-        module.statistics_records['shape'] = distiller.size2str(output)
+        module.statistics_records["min"].extend(batch_min_list)
+        module.statistics_records["max"].extend(batch_max_list)
+        module.statistics_records["mean"].extend(batch_mean_list)
+        module.statistics_records["std"].extend(batch_std_list)
+        module.statistics_records["l2"].extend(batch_l2_list)
+        module.statistics_records["shape"] = distiller.size2str(output)
 
     @staticmethod
     def _create_records_dict():
         records = OrderedDict()
-        for stat_name in ['min', 'max', 'mean', 'std', 'l2']:
+        for stat_name in ["min", "max", "mean", "std", "l2"]:
             records[stat_name] = []
-        records['shape'] = ''
+        records["shape"] = ""
         return records
 
     def save(self, fname):
         """Save the records to an Excel workbook, with one worksheet per layer.
         """
-        fname = ".".join([fname, 'xlsx'])
+        fname = ".".join([fname, "xlsx"])
         try:
             os.remove(fname)
         except OSError:
@@ -282,12 +313,12 @@ class RecordsActivationStatsCollector(ActivationStatsCollector):
                 worksheet = workbook.add_worksheet(module_name)
                 col_names = []
                 for col, (col_name, col_data) in enumerate(module_act_records.items()):
-                    if col_name == 'shape':
+                    if col_name == "shape":
                         continue
                     worksheet.write_column(1, col, col_data)
                     col_names.append(col_name)
                 worksheet.write_row(0, 0, col_names)
-                worksheet.write(0, len(col_names)+2, module_act_records['shape'])
+                worksheet.write(0, len(col_names) + 2, module_act_records["shape"])
         return fname
 
     def _start_counter(self, module):
@@ -298,7 +329,7 @@ class RecordsActivationStatsCollector(ActivationStatsCollector):
         if hasattr(module, "statistics_records"):
             module.statistics_records = self._create_records_dict()
 
-    def _collect_activations_stats(self, module, activation_stats, name=''):
+    def _collect_activations_stats(self, module, activation_stats, name=""):
         if hasattr(module, "statistics_records"):
             activation_stats[module.distiller_name] = module.statistics_records
 
@@ -307,11 +338,11 @@ class _QuantStatsRecord(object):
     @staticmethod
     def create_records_dict():
         records = OrderedDict()
-        records['min'] = float_info.max
-        records['max'] = -float_info.max
-        for stat_name in ['avg_min', 'avg_max', 'mean', 'std']:
+        records["min"] = float_info.max
+        records["max"] = -float_info.max
+        for stat_name in ["avg_min", "avg_max", "mean", "std"]:
             records[stat_name] = 0
-        records['shape'] = ''
+        records["shape"] = ""
         return records
 
     def __init__(self):
@@ -322,9 +353,11 @@ class _QuantStatsRecord(object):
 
 def _verify_no_dataparallel(model):
     if torch.nn.DataParallel in [type(m) for m in model.modules()]:
-        raise ValueError('Model contains DataParallel modules, which can cause inaccurate stats collection. '
-                         'Either create a model without DataParallel modules, or call '
-                         'distiller.utils.make_non_parallel_copy on the model before invoking the collector')
+        raise ValueError(
+            "Model contains DataParallel modules, which can cause inaccurate stats collection. "
+            "Either create a model without DataParallel modules, or call "
+            "distiller.utils.make_non_parallel_copy on the model before invoking the collector"
+        )
 
 
 class QuantCalibrationStatsCollector(ActivationStatsCollector):
@@ -376,9 +409,18 @@ class QuantCalibrationStatsCollector(ActivationStatsCollector):
       * Track inputs in addition to outputs
       * Different serialization (yaml vs xlsx)
     """
-    def __init__(self, model, classes=None, inplace_runtime_check=False,
-                 disable_inplace_attrs=False, inplace_attr_names=('inplace',)):
-        super(QuantCalibrationStatsCollector, self).__init__(model, "quant_stats", classes)
+
+    def __init__(
+        self,
+        model,
+        classes=None,
+        inplace_runtime_check=False,
+        disable_inplace_attrs=False,
+        inplace_attr_names=("inplace",),
+    ):
+        super(QuantCalibrationStatsCollector, self).__init__(
+            model, "quant_stats", classes
+        )
 
         _verify_no_dataparallel(model)
 
@@ -387,7 +429,7 @@ class QuantCalibrationStatsCollector(ActivationStatsCollector):
 
         if disable_inplace_attrs:
             if not inplace_attr_names:
-                raise ValueError('inplace_attr_names cannot by empty or None')
+                raise ValueError("inplace_attr_names cannot by empty or None")
             for m in model.modules():
                 for n in inplace_attr_names:
                     if hasattr(m, n):
@@ -413,34 +455,52 @@ class QuantCalibrationStatsCollector(ActivationStatsCollector):
             act = tensor.view(tensor.size(0), -1)
             min_per_sample = act.min(dim=1)[0]
             max_per_sample = act.max(dim=1)[0]
-            record['min'] = min(record['min'], min_per_sample.min().item())
-            record['max'] = max(record['max'], max_per_sample.max().item())
+            record["min"] = min(record["min"], min_per_sample.min().item())
+            record["max"] = max(record["max"], max_per_sample.max().item())
             try:
-                record['avg_min'] = update_mean(record['avg_min'], min_per_sample.mean().item())
-                record['avg_max'] = update_mean(record['avg_max'], max_per_sample.mean().item())
-                new_mean = update_mean(record['mean'], act.mean().item())
-                record['std'] = update_std(tensor, record['std'], record['mean'], new_mean)
+                record["avg_min"] = update_mean(
+                    record["avg_min"], min_per_sample.mean().item()
+                )
+                record["avg_max"] = update_mean(
+                    record["avg_max"], max_per_sample.mean().item()
+                )
+                new_mean = update_mean(record["mean"], act.mean().item())
+                record["std"] = update_std(
+                    tensor, record["std"], record["mean"], new_mean
+                )
             except RuntimeError:
-                record['avg_min'] = update_mean(record['avg_min'], min_per_sample.cpu().numpy().mean().item(0))
-                record['avg_max'] = update_mean(record['avg_max'], max_per_sample.cpu().numpy().mean().item(0))
-                new_mean = update_mean(record['mean'], act.cpu().numpy().mean().item(0))
-                record['std'] = update_std(tensor.cpu().numpy(), record['std'], record['mean'], new_mean)
-            record['mean'] = new_mean
+                record["avg_min"] = update_mean(
+                    record["avg_min"], min_per_sample.cpu().numpy().mean().item(0)
+                )
+                record["avg_max"] = update_mean(
+                    record["avg_max"], max_per_sample.cpu().numpy().mean().item(0)
+                )
+                new_mean = update_mean(record["mean"], act.cpu().numpy().mean().item(0))
+                record["std"] = update_std(
+                    tensor.cpu().numpy(), record["std"], record["mean"], new_mean
+                )
+            record["mean"] = new_mean
 
-            if not record['shape']:
-                record['shape'] = distiller.size2str(tensor)
+            if not record["shape"]:
+                record["shape"] = distiller.size2str(tensor)
 
-        if self.inplace_runtime_check and any([id(input) == id(output) for input in inputs]):
-            raise RuntimeError('Inplace operation detected, meaning inputs stats are overridden by output stats. '
-                               'You can either disable this check or make sure no in-place operations occur. '
-                               'See QuantCalibrationStatsCollector class documentation for more info.')
+        if self.inplace_runtime_check and any(
+            [id(input) == id(output) for input in inputs]
+        ):
+            raise RuntimeError(
+                "Inplace operation detected, meaning inputs stats are overridden by output stats. "
+                "You can either disable this check or make sure no in-place operations occur. "
+                "See QuantCalibrationStatsCollector class documentation for more info."
+            )
 
         module.batch_idx += 1
 
         if not module.quant_stats.inputs:
             # Delayed initialization of inputs records, because only now we know the # of inputs
             for i in range(len(inputs)):
-                module.quant_stats.inputs.append(_QuantStatsRecord.create_records_dict())
+                module.quant_stats.inputs.append(
+                    _QuantStatsRecord.create_records_dict()
+                )
 
         with torch.no_grad():
             for idx, input in enumerate(inputs):
@@ -457,33 +517,34 @@ class QuantCalibrationStatsCollector(ActivationStatsCollector):
         module.quant_stats = _QuantStatsRecord()
         module.batch_idx = 0
 
-    def _collect_activations_stats(self, module, activation_stats, name=''):
+    def _collect_activations_stats(self, module, activation_stats, name=""):
         if distiller.utils.has_children(module):
             return
-        if not hasattr(module, 'quant_stats'):
+        if not hasattr(module, "quant_stats"):
             return
 
         activation_stats[module.distiller_name] = OrderedDict()
         if module.quant_stats.inputs:
-            activation_stats[module.distiller_name]['inputs'] = OrderedDict()
+            activation_stats[module.distiller_name]["inputs"] = OrderedDict()
             for idx, sr in enumerate(module.quant_stats.inputs):
-                activation_stats[module.distiller_name]['inputs'][idx] = sr
-        activation_stats[module.distiller_name]['output'] = module.quant_stats.output
+                activation_stats[module.distiller_name]["inputs"][idx] = sr
+        activation_stats[module.distiller_name]["output"] = module.quant_stats.output
 
     def save(self, fname):
         def ordered_dict_representer(self, value):
-            return self.represent_mapping('tag:yaml.org,2002:map', value.items())
+            return self.represent_mapping("tag:yaml.org,2002:map", value.items())
+
         yaml.add_representer(OrderedDict, ordered_dict_representer)
 
-        if not fname.endswith('.yaml'):
-            fname = ".".join([fname, 'yaml'])
+        if not fname.endswith(".yaml"):
+            fname = ".".join([fname, "yaml"])
         try:
             os.remove(fname)
         except OSError:
             pass
 
         records_dict = self.value()
-        with open(fname, 'w') as f:
+        with open(fname, "w") as f:
             yaml.dump(records_dict, f, default_flow_style=False)
 
         return fname
@@ -524,29 +585,43 @@ class ActivationHistogramsCollector(ActivationStatsCollector):
           stats dictionary
         hist_imgs_ext (str): The file type to be used when saving histogram images
     """
-    def __init__(self, model, activation_stats, classes=None, nbins=2048,
-                 save_hist_imgs=False, hist_imgs_ext='.svg'):
-        super(ActivationHistogramsCollector, self).__init__(model, 'histogram', classes)
+
+    def __init__(
+        self,
+        model,
+        activation_stats,
+        classes=None,
+        nbins=2048,
+        save_hist_imgs=False,
+        hist_imgs_ext=".svg",
+    ):
+        super(ActivationHistogramsCollector, self).__init__(model, "histogram", classes)
 
         _verify_no_dataparallel(model)
 
         if isinstance(activation_stats, str):
             if not os.path.isfile(activation_stats):
-                raise ValueError("Model activation stats file not found at: " + activation_stats)
-            msglogger.info('Loading activation stats from: ' + activation_stats)
-            with open(activation_stats, 'r') as stream:
+                raise ValueError(
+                    "Model activation stats file not found at: " + activation_stats
+                )
+            msglogger.info("Loading activation stats from: " + activation_stats)
+            with open(activation_stats, "r") as stream:
                 activation_stats = distiller.utils.yaml_ordered_load(stream)
         elif not isinstance(activation_stats, (dict, OrderedDict)):
-            raise TypeError('model_activation_stats must either be a string, a dict / OrderedDict or None')
+            raise TypeError(
+                "model_activation_stats must either be a string, a dict / OrderedDict or None"
+            )
 
         self.act_stats = activation_stats
         self.nbins = nbins
         self.save_imgs = save_hist_imgs
-        self.imgs_ext = hist_imgs_ext if hist_imgs_ext[0] == '.' else '.' + hist_imgs_ext
+        self.imgs_ext = (
+            hist_imgs_ext if hist_imgs_ext[0] == "." else "." + hist_imgs_ext
+        )
 
     def _get_min_max(self, *keys):
         stats_entry = reduce(operator.getitem, keys, self.act_stats)
-        return stats_entry['min'], stats_entry['max']
+        return stats_entry["min"], stats_entry["max"]
 
     def _activation_stats_cb(self, module, inputs, output):
         def get_hist(t, stat_min, stat_max):
@@ -554,61 +629,73 @@ class ActivationHistogramsCollector(ActivationStatsCollector):
             if t.dtype not in [torch.float, torch.double, torch.half]:
                 t = t.float()
             t_clamped = t.clamp(stat_min, stat_max)
-            hist = torch.histc(t_clamped.cpu(), bins=self.nbins, min=stat_min, max=stat_max)
+            hist = torch.histc(
+                t_clamped.cpu(), bins=self.nbins, min=stat_min, max=stat_max
+            )
             return hist
 
         with torch.no_grad():
             for idx, input in enumerate(inputs):
-                stat_min, stat_max = self._get_min_max(module.distiller_name, 'inputs', idx)
+                stat_min, stat_max = self._get_min_max(
+                    module.distiller_name, "inputs", idx
+                )
                 curr_hist = get_hist(input, stat_min, stat_max)
                 module.input_hists[idx] += curr_hist
 
-            stat_min, stat_max = self._get_min_max(module.distiller_name, 'output')
+            stat_min, stat_max = self._get_min_max(module.distiller_name, "output")
             curr_hist = get_hist(output, stat_min, stat_max)
             module.output_hist += curr_hist
 
     def _reset(self, module):
-        num_inputs = len(self.act_stats[module.distiller_name]['inputs'])
-        module.input_hists = module.input_hists = [torch.zeros(self.nbins) for _ in range(num_inputs)]
+        num_inputs = len(self.act_stats[module.distiller_name]["inputs"])
+        module.input_hists = module.input_hists = [
+            torch.zeros(self.nbins) for _ in range(num_inputs)
+        ]
         module.output_hist = torch.zeros(self.nbins)
 
     def _start_counter(self, module):
         self._reset(module)
 
     def _reset_counter(self, module):
-        if hasattr(module, 'output_hist'):
+        if hasattr(module, "output_hist"):
             self._reset(module)
 
-    def _collect_activations_stats(self, module, activation_stats, name=''):
+    def _collect_activations_stats(self, module, activation_stats, name=""):
         if distiller.utils.has_children(module):
             return
-        if not hasattr(module, 'output_hist'):
+        if not hasattr(module, "output_hist"):
             return
 
         def get_hist_entry(min_val, max_val, hist):
             od = OrderedDict()
-            od['hist'] = hist
+            od["hist"] = hist
             bin_width = (max_val - min_val) / self.nbins
-            od['bin_centroids'] = torch.linspace(min_val + bin_width / 2, max_val - bin_width / 2, self.nbins)
+            od["bin_centroids"] = torch.linspace(
+                min_val + bin_width / 2, max_val - bin_width / 2, self.nbins
+            )
             return od
 
         stats_od = OrderedDict()
         inputs_od = OrderedDict()
         for idx, hist in enumerate(module.input_hists):
-            inputs_od[idx] = get_hist_entry(*self._get_min_max(module.distiller_name, 'inputs', idx),
-                                            module.input_hists[idx])
+            inputs_od[idx] = get_hist_entry(
+                *self._get_min_max(module.distiller_name, "inputs", idx),
+                module.input_hists[idx]
+            )
 
-        output_od = get_hist_entry(*self._get_min_max(module.distiller_name, 'output'), module.output_hist)
+        output_od = get_hist_entry(
+            *self._get_min_max(module.distiller_name, "output"), module.output_hist
+        )
 
-        stats_od['inputs'] = inputs_od
-        stats_od['output'] = output_od
+        stats_od["inputs"] = inputs_od
+        stats_od["output"] = output_od
         activation_stats[module.distiller_name] = stats_od
 
     def save(self, fname):
         hist_dict = self.value()
 
-        if not fname.endswith('.pt'):
-            fname = ".".join([fname, 'pt'])
+        if not fname.endswith(".pt"):
+            fname = ".".join([fname, "pt"])
         try:
             os.remove(fname)
         except OSError:
@@ -617,44 +704,76 @@ class ActivationHistogramsCollector(ActivationStatsCollector):
         torch.save(hist_dict, fname)
 
         if self.save_imgs:
-            msglogger.info('Saving histogram images...')
-            save_dir = os.path.join(os.path.split(fname)[0], 'histogram_imgs')
+            msglogger.info("Saving histogram images...")
+            save_dir = os.path.join(os.path.split(fname)[0], "histogram_imgs")
             if not os.path.isdir(save_dir):
                 os.mkdir(save_dir)
 
-            def save_hist(layer_name, tensor_name, idx, bin_counts, bin_centroids, normed=True):
+            def save_hist(
+                layer_name, tensor_name, idx, bin_counts, bin_centroids, normed=True
+            ):
                 if normed:
                     bin_counts = bin_counts / bin_counts.sum()
                 plt.figure(figsize=(12, 12))
-                plt.suptitle('\n'.join((layer_name, tensor_name)), fontsize=18, fontweight='bold')
-                for subplt_idx, yscale in enumerate(['linear', 'log']):
+                plt.suptitle(
+                    "\n".join((layer_name, tensor_name)), fontsize=18, fontweight="bold"
+                )
+                for subplt_idx, yscale in enumerate(["linear", "log"]):
                     plt.subplot(2, 1, subplt_idx + 1)
-                    plt.fill_between(bin_centroids, bin_counts, step='mid', antialiased=False)
-                    if yscale == 'linear':
+                    plt.fill_between(
+                        bin_centroids, bin_counts, step="mid", antialiased=False
+                    )
+                    if yscale == "linear":
                         plt.ylim(bottom=0)
-                    plt.title(yscale + ' scale')
+                    plt.title(yscale + " scale")
                     plt.yscale(yscale)
-                    plt.xlabel('Activation Value')
-                    plt.ylabel('Normalized Count')
+                    plt.xlabel("Activation Value")
+                    plt.ylabel("Normalized Count")
                 plt.tight_layout(rect=[0, 0, 1, 0.93])
-                idx_str = '{:03d}'.format(idx)
-                plt.savefig(os.path.join(save_dir, '-'.join((idx_str, layer_name, tensor_name)) + self.imgs_ext))
+                idx_str = "{:03d}".format(idx)
+                plt.savefig(
+                    os.path.join(
+                        save_dir,
+                        "-".join((idx_str, layer_name, tensor_name)) + self.imgs_ext,
+                    )
+                )
                 plt.close()
 
             cnt = 0
             for layer_name, data in hist_dict.items():
-                for idx, od in data['inputs'].items():
+                for idx, od in data["inputs"].items():
                     cnt += 1
-                    save_hist(layer_name, 'input_{}'.format(idx), cnt, od['hist'], od['bin_centroids'], normed=True)
-                od = data['output']
+                    save_hist(
+                        layer_name,
+                        "input_{}".format(idx),
+                        cnt,
+                        od["hist"],
+                        od["bin_centroids"],
+                        normed=True,
+                    )
+                od = data["output"]
                 cnt += 1
-                save_hist(layer_name, 'output', cnt, od['hist'], od['bin_centroids'], normed=True)
-            msglogger.info('Done')
+                save_hist(
+                    layer_name,
+                    "output",
+                    cnt,
+                    od["hist"],
+                    od["bin_centroids"],
+                    normed=True,
+                )
+            msglogger.info("Done")
         return fname
 
 
-def collect_quant_stats(model, test_fn, save_dir=None, classes=None, inplace_runtime_check=False,
-                        disable_inplace_attrs=False, inplace_attr_names=('inplace',)):
+def collect_quant_stats(
+    model,
+    test_fn,
+    save_dir=None,
+    classes=None,
+    inplace_runtime_check=False,
+    disable_inplace_attrs=False,
+    inplace_attr_names=("inplace",),
+):
     """
     Helper function for collecting quantization calibration statistics for a model using QuantCalibrationStatsCollector
 
@@ -674,24 +793,35 @@ def collect_quant_stats(model, test_fn, save_dir=None, classes=None, inplace_run
         Dictionary with quantization stats (see QuantCalibrationStatsCollector for a description of the dictionary
         contents)
     """
-    msglogger.info('Collecting quantization calibration stats for model')
-    quant_stats_collector = QuantCalibrationStatsCollector(model, classes=classes,
-                                                           inplace_runtime_check=inplace_runtime_check,
-                                                           disable_inplace_attrs=disable_inplace_attrs,
-                                                           inplace_attr_names=inplace_attr_names)
+    msglogger.info("Collecting quantization calibration stats for model")
+    quant_stats_collector = QuantCalibrationStatsCollector(
+        model,
+        classes=classes,
+        inplace_runtime_check=inplace_runtime_check,
+        disable_inplace_attrs=disable_inplace_attrs,
+        inplace_attr_names=inplace_attr_names,
+    )
     with collector_context(quant_stats_collector):
         test_fn(model=model)
-    msglogger.info('Stats collection complete')
+    msglogger.info("Stats collection complete")
     if save_dir is not None:
-        save_path = os.path.join(save_dir, 'acts_quantization_stats.yaml')
+        save_path = os.path.join(save_dir, "acts_quantization_stats.yaml")
         quant_stats_collector.save(save_path)
-        msglogger.info('Stats saved to ' + save_path)
+        msglogger.info("Stats saved to " + save_path)
 
     return quant_stats_collector.value()
 
 
-def collect_histograms(model, test_fn, save_dir=None, activation_stats=None,
-                       classes=None, nbins=2048, save_hist_imgs=False, hist_imgs_ext='.svg'):
+def collect_histograms(
+    model,
+    test_fn,
+    save_dir=None,
+    activation_stats=None,
+    classes=None,
+    nbins=2048,
+    save_hist_imgs=False,
+    hist_imgs_ext=".svg",
+):
     """
     Helper function for collecting activation histograms for a model using ActivationsHistogramCollector.
     Will perform 2 passes - one to collect the required stats and another to collect the histograms. The first
@@ -715,25 +845,41 @@ def collect_histograms(model, test_fn, save_dir=None, activation_stats=None,
         Dictionary with histograms data (See ActivationsHistogramCollector for a description of the dictionary
         contents)
     """
-    msglogger.info('Pass 1: Stats collection')
+    msglogger.info("Pass 1: Stats collection")
     if activation_stats is not None:
-        msglogger.info('Pre-computed activation stats passed, skipping stats collection')
+        msglogger.info(
+            "Pre-computed activation stats passed, skipping stats collection"
+        )
     else:
-        activation_stats = collect_quant_stats(model, test_fn, save_dir=save_dir, classes=classes,
-                                               inplace_runtime_check=True, disable_inplace_attrs=True)
+        activation_stats = collect_quant_stats(
+            model,
+            test_fn,
+            save_dir=save_dir,
+            classes=classes,
+            inplace_runtime_check=True,
+            disable_inplace_attrs=True,
+        )
 
-    msglogger.info('Pass 2: Histograms generation')
-    histogram_collector = ActivationHistogramsCollector(model, activation_stats, classes=classes, nbins=nbins,
-                                                        save_hist_imgs=save_hist_imgs, hist_imgs_ext=hist_imgs_ext)
+    msglogger.info("Pass 2: Histograms generation")
+    histogram_collector = ActivationHistogramsCollector(
+        model,
+        activation_stats,
+        classes=classes,
+        nbins=nbins,
+        save_hist_imgs=save_hist_imgs,
+        hist_imgs_ext=hist_imgs_ext,
+    )
     with collector_context(histogram_collector):
         test_fn(model=model)
-    msglogger.info('Histograms generation complete')
+    msglogger.info("Histograms generation complete")
     if save_dir is not None:
-        save_path = os.path.join(save_dir, 'acts_histograms.pt')
+        save_path = os.path.join(save_dir, "acts_histograms.pt")
         histogram_collector.save(save_path)
         msglogger.info("Histogram data saved to " + save_path)
         if save_hist_imgs:
-            msglogger.info('Histogram images saved in ' + os.path.join(save_dir, 'histogram_imgs'))
+            msglogger.info(
+                "Histogram images saved in " + os.path.join(save_dir, "histogram_imgs")
+            )
 
     return histogram_collector.value()
 
@@ -764,17 +910,18 @@ def collectors_context(collectors_dict):
 class TrainingProgressCollector(object):
     def __init__(self, stats={}):
         super(TrainingProgressCollector, self).__init__()
-        object.__setattr__(self, '_stats', stats)
+        object.__setattr__(self, "_stats", stats)
 
     def __setattr__(self, name, value):
-        stats = self.__dict__.get('_stats')
+        stats = self.__dict__.get("_stats")
         stats[name] = value
 
     def __getattr__(self, name):
-        if name in self.__dict__['_stats']:
-            return self.__dict__['_stats'][name]
-        raise AttributeError("'{}' object has no attribute '{}'".format(
-            type(self).__name__, name))
+        if name in self.__dict__["_stats"]:
+            return self.__dict__["_stats"][name]
+        raise AttributeError(
+            "'{}' object has no attribute '{}'".format(type(self).__name__, name)
+        )
 
     def value(self):
         return self._stats

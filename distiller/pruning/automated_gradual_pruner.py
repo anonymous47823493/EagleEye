@@ -41,24 +41,30 @@ class AutomatedGradualPrunerBase(_ParameterPruner):
         assert final_sparsity > initial_sparsity
 
     def compute_target_sparsity(self, meta):
-        starting_epoch = meta['starting_epoch']
-        current_epoch = meta['current_epoch']
-        ending_epoch = meta['ending_epoch']
-        freq = meta['frequency']
+        starting_epoch = meta["starting_epoch"]
+        current_epoch = meta["current_epoch"]
+        ending_epoch = meta["ending_epoch"]
+        freq = meta["frequency"]
         span = ((ending_epoch - starting_epoch - 1) // freq) * freq
         assert span > 0
 
-        target_sparsity = (self.final_sparsity +
-                           (self.initial_sparsity-self.final_sparsity) *
-                           (1.0 - ((current_epoch-starting_epoch)/span))**3)
+        target_sparsity = (
+            self.final_sparsity
+            + (self.initial_sparsity - self.final_sparsity)
+            * (1.0 - ((current_epoch - starting_epoch) / span)) ** 3
+        )
 
         return target_sparsity
 
     def set_param_mask(self, param, param_name, zeros_mask_dict, meta):
         target_sparsity = self.compute_target_sparsity(meta)
-        self.prune_to_target_sparsity(param, param_name, zeros_mask_dict, target_sparsity, meta['model'])
+        self.prune_to_target_sparsity(
+            param, param_name, zeros_mask_dict, target_sparsity, meta["model"]
+        )
 
-    def prune_to_target_sparsity(self, param, param_name, zeros_mask_dict, target_sparsity, model=None):
+    def prune_to_target_sparsity(
+        self, param, param_name, zeros_mask_dict, target_sparsity, model=None
+    ):
         raise NotImplementedError
 
 
@@ -68,6 +74,7 @@ class AutomatedGradualPruner(AutomatedGradualPrunerBase):
     An automated gradual pruning algorithm that prunes the smallest magnitude
     weights to achieve a preset level of network sparsity.
     """
+
     def __init__(self, name, initial_sparsity, final_sparsity, weights):
         super().__init__(name, initial_sparsity, final_sparsity)
         self.params_names = weights
@@ -78,8 +85,12 @@ class AutomatedGradualPruner(AutomatedGradualPrunerBase):
             return
         super().set_param_mask(param, param_name, zeros_mask_dict, meta)
 
-    def prune_to_target_sparsity(self, param, param_name, zeros_mask_dict, target_sparsity, model=None):
-        return SparsityLevelParameterPruner.prune_level(param, param_name, zeros_mask_dict, target_sparsity)
+    def prune_to_target_sparsity(
+        self, param, param_name, zeros_mask_dict, target_sparsity, model=None
+    ):
+        return SparsityLevelParameterPruner.prune_level(
+            param, param_name, zeros_mask_dict, target_sparsity
+        )
 
 
 class StructuredAGP(AutomatedGradualPrunerBase):
@@ -88,64 +99,165 @@ class StructuredAGP(AutomatedGradualPrunerBase):
     This is a base-class for structured pruning with an AGP schedule.  It is an
     extension of the AGP concept introduced by Zhu et. al.
     """
+
     def __init__(self, name, initial_sparsity, final_sparsity):
         super().__init__(name, initial_sparsity, final_sparsity)
         self.pruner = None
 
-    def prune_to_target_sparsity(self, param, param_name, zeros_mask_dict, target_sparsity, model):
-        self.pruner.prune_to_target_sparsity(param, param_name, zeros_mask_dict, target_sparsity, model)
+    def prune_to_target_sparsity(
+        self, param, param_name, zeros_mask_dict, target_sparsity, model
+    ):
+        self.pruner.prune_to_target_sparsity(
+            param, param_name, zeros_mask_dict, target_sparsity, model
+        )
 
 
 # TODO: this class parameterization is cumbersome: the ranking functions (per structure)
 # should come from the YAML schedule
 class L1RankedStructureParameterPruner_AGP(StructuredAGP):
-    def __init__(self, name, initial_sparsity, final_sparsity, group_type, weights, group_dependency=None, kwargs=None):
+    def __init__(
+        self,
+        name,
+        initial_sparsity,
+        final_sparsity,
+        group_type,
+        weights,
+        group_dependency=None,
+        kwargs=None,
+    ):
         super().__init__(name, initial_sparsity, final_sparsity)
-        self.pruner = L1RankedStructureParameterPruner(name, group_type, desired_sparsity=0, weights=weights,
-                                                       group_dependency=group_dependency, kwargs=kwargs)
+        self.pruner = L1RankedStructureParameterPruner(
+            name,
+            group_type,
+            desired_sparsity=0,
+            weights=weights,
+            group_dependency=group_dependency,
+            kwargs=kwargs,
+        )
 
 
 class L2RankedStructureParameterPruner_AGP(StructuredAGP):
-    def __init__(self, name, initial_sparsity, final_sparsity, group_type, weights, group_dependency=None, kwargs=None):
+    def __init__(
+        self,
+        name,
+        initial_sparsity,
+        final_sparsity,
+        group_type,
+        weights,
+        group_dependency=None,
+        kwargs=None,
+    ):
         super().__init__(name, initial_sparsity, final_sparsity)
-        self.pruner = L2RankedStructureParameterPruner(name, group_type, desired_sparsity=0, weights=weights,
-                                                       group_dependency=group_dependency, kwargs=kwargs)
+        self.pruner = L2RankedStructureParameterPruner(
+            name,
+            group_type,
+            desired_sparsity=0,
+            weights=weights,
+            group_dependency=group_dependency,
+            kwargs=kwargs,
+        )
 
 
 class ActivationAPoZRankedFilterPruner_AGP(StructuredAGP):
-    def __init__(self, name, initial_sparsity, final_sparsity, group_type, weights, group_dependency=None):
-        assert group_type in ['3D', 'Filters']
+    def __init__(
+        self,
+        name,
+        initial_sparsity,
+        final_sparsity,
+        group_type,
+        weights,
+        group_dependency=None,
+    ):
+        assert group_type in ["3D", "Filters"]
         super().__init__(name, initial_sparsity, final_sparsity)
-        self.pruner = ActivationAPoZRankedFilterPruner(name, group_type, desired_sparsity=0,
-                                                       weights=weights, group_dependency=group_dependency)
+        self.pruner = ActivationAPoZRankedFilterPruner(
+            name,
+            group_type,
+            desired_sparsity=0,
+            weights=weights,
+            group_dependency=group_dependency,
+        )
 
 
 class ActivationMeanRankedFilterPruner_AGP(StructuredAGP):
-    def __init__(self, name, initial_sparsity, final_sparsity, group_type, weights, group_dependency=None):
-        assert group_type in ['3D', 'Filters']
+    def __init__(
+        self,
+        name,
+        initial_sparsity,
+        final_sparsity,
+        group_type,
+        weights,
+        group_dependency=None,
+    ):
+        assert group_type in ["3D", "Filters"]
         super().__init__(name, initial_sparsity, final_sparsity)
-        self.pruner = ActivationMeanRankedFilterPruner(name, group_type, desired_sparsity=0,
-                                                       weights=weights, group_dependency=group_dependency)
+        self.pruner = ActivationMeanRankedFilterPruner(
+            name,
+            group_type,
+            desired_sparsity=0,
+            weights=weights,
+            group_dependency=group_dependency,
+        )
+
 
 class GradientRankedFilterPruner_AGP(StructuredAGP):
-    def __init__(self, name, initial_sparsity, final_sparsity, group_type, weights, group_dependency=None):
-        assert group_type in ['3D', 'Filters']
+    def __init__(
+        self,
+        name,
+        initial_sparsity,
+        final_sparsity,
+        group_type,
+        weights,
+        group_dependency=None,
+    ):
+        assert group_type in ["3D", "Filters"]
         super().__init__(name, initial_sparsity, final_sparsity)
-        self.pruner = GradientRankedFilterPruner(name, group_type, desired_sparsity=0,
-                                                 weights=weights, group_dependency=group_dependency)
+        self.pruner = GradientRankedFilterPruner(
+            name,
+            group_type,
+            desired_sparsity=0,
+            weights=weights,
+            group_dependency=group_dependency,
+        )
 
 
 class RandomRankedFilterPruner_AGP(StructuredAGP):
-    def __init__(self, name, initial_sparsity, final_sparsity, group_type, weights, group_dependency=None):
-        assert group_type in ['3D', 'Filters']
+    def __init__(
+        self,
+        name,
+        initial_sparsity,
+        final_sparsity,
+        group_type,
+        weights,
+        group_dependency=None,
+    ):
+        assert group_type in ["3D", "Filters"]
         super().__init__(name, initial_sparsity, final_sparsity)
-        self.pruner = RandomRankedFilterPruner(name, group_type, desired_sparsity=0,
-                                               weights=weights, group_dependency=group_dependency)
+        self.pruner = RandomRankedFilterPruner(
+            name,
+            group_type,
+            desired_sparsity=0,
+            weights=weights,
+            group_dependency=group_dependency,
+        )
 
 
 class BernoulliFilterPruner_AGP(StructuredAGP):
-    def __init__(self, name, initial_sparsity, final_sparsity, group_type, weights, group_dependency=None):
-        assert group_type in ['3D', 'Filters']
+    def __init__(
+        self,
+        name,
+        initial_sparsity,
+        final_sparsity,
+        group_type,
+        weights,
+        group_dependency=None,
+    ):
+        assert group_type in ["3D", "Filters"]
         super().__init__(name, initial_sparsity, final_sparsity)
-        self.pruner = BernoulliFilterPruner(name, group_type, desired_sparsity=0,
-                                            weights=weights, group_dependency=group_dependency)
+        self.pruner = BernoulliFilterPruner(
+            name,
+            group_type,
+            desired_sparsity=0,
+            weights=weights,
+            group_dependency=group_dependency,
+        )

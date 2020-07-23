@@ -17,17 +17,20 @@
 import torch
 import distiller
 
+
 class _ParameterPruner(object):
     """Base class for all pruners.
 
     Arguments:
         name: pruner name is used mainly for debugging.
     """
+
     def __init__(self, name):
         self.name = name
 
     def set_param_mask(self, param, param_name, zeros_mask_dict, meta):
         raise NotImplementedError
+
 
 def threshold_model(model, threshold):
     """Threshold an entire model using the provided threshold
@@ -35,6 +38,6 @@ def threshold_model(model, threshold):
     This function prunes weights only (biases are left untouched).
     """
     for name, p in model.named_parameters():
-       if 'weight' in name:
-           mask = distiller.threshold_mask(p.data, threshold)
-           p.data = p.data.mul_(mask)
+        if "weight" in name:
+            mask = distiller.threshold_mask(p.data, threshold)
+            p.data = p.data.mul_(mask)

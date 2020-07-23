@@ -5,6 +5,7 @@
 #  Date: 14 JULY 2020
 #  ------------------------------------------------------------------
 import sys
+
 data_path = sys.argv[1]
 
 score = []
@@ -19,5 +20,9 @@ with open(data_path) as data:
 score_sorted_index = sorted(range(len(score)), key=lambda k: score[k], reverse=True)
 
 for i in range(5):
-    print('strategy index:{}, score:{}'.format(score_sorted_index[i], score[score_sorted_index[i]]))
+    print(
+        "strategy index:{}, score:{}".format(
+            score_sorted_index[i], score[score_sorted_index[i]]
+        )
+    )
 print("\n")

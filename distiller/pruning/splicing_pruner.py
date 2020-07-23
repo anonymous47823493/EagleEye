@@ -18,6 +18,7 @@
 from .pruner import _ParameterPruner
 import torch
 import logging
+
 msglogger = logging.getLogger()
 
 
@@ -34,7 +35,14 @@ class SplicingPruner(_ParameterPruner):
     https://github.com/yiwenguo/Dynamic-Network-Surgery/blob/master/src/caffe/layers/compress_conv_layer.cpp
     """
 
-    def __init__(self, name, sensitivities, low_thresh_mult, hi_thresh_mult, sensitivity_multiplier=0):
+    def __init__(
+        self,
+        name,
+        sensitivities,
+        low_thresh_mult,
+        hi_thresh_mult,
+        sensitivity_multiplier=0,
+    ):
         """Arguments:
         """
         super(SplicingPruner, self).__init__(name)
@@ -45,23 +53,25 @@ class SplicingPruner(_ParameterPruner):
 
     def set_param_mask(self, param, param_name, zeros_mask_dict, meta):
         if param_name not in self.sensitivities:
-            if '*' not in self.sensitivities:
+            if "*" not in self.sensitivities:
                 return
             else:
-                sensitivity = self.sensitivities['*']
+                sensitivity = self.sensitivities["*"]
         else:
             sensitivity = self.sensitivities[param_name]
 
-        if not hasattr(param, '_std'):
+        if not hasattr(param, "_std"):
             # Compute the mean and standard-deviation once, and cache them.
             param._std = torch.std(param.abs()).item()
             param._mean = torch.mean(param.abs()).item()
 
         if self.sensitivity_multiplier > 0:
             # Linearly growing sensitivity - for now this is hard-coded
-            starting_epoch = meta['starting_epoch']
-            current_epoch = meta['current_epoch']
-            sensitivity *= (current_epoch - starting_epoch) * self.sensitivity_multiplier + 1
+            starting_epoch = meta["starting_epoch"]
+            current_epoch = meta["current_epoch"]
+            sensitivity *= (
+                current_epoch - starting_epoch
+            ) * self.sensitivity_multiplier + 1
 
         threshold_low = (param._mean + param._std * sensitivity) * self.low_thresh_mult
         threshold_hi = (param._mean + param._std * sensitivity) * self.hi_thresh_mult
@@ -81,9 +91,12 @@ class SplicingPruner(_ParameterPruner):
         # We followed the example implementation from Yiwen Guo in Caffe, and used the
         # weight tensor's starting mean and std.
         # This is very similar to the initialization performed by distiller.SensitivityPruner.
-    
+
         mask = zeros_mask_dict[param_name].mask
-        zeros, ones = torch.tensor([0]).type(mask.type()), torch.tensor([1]).type(mask.type())
+        zeros, ones = (
+            torch.tensor([0]).type(mask.type()),
+            torch.tensor([1]).type(mask.type()),
+        )
         weights_abs = param.abs()
         new_mask = torch.where(threshold_low > weights_abs, zeros, mask)
         new_mask = torch.where(threshold_hi <= weights_abs, ones, new_mask)

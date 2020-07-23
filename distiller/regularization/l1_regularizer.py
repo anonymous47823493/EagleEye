@@ -22,6 +22,7 @@ import numpy as np
 import distiller
 from .regularizer import _Regularizer, EPSILON
 
+
 class L1Regularizer(_Regularizer):
     def __init__(self, name, model, reg_regims, threshold_criteria=None):
         super(L1Regularizer, self).__init__(name, model, reg_regims, threshold_criteria)
@@ -39,7 +40,9 @@ class L1Regularizer(_Regularizer):
             return
 
         strength = self.reg_regims[param_name]
-        zeros_mask_dict[param_name].mask = distiller.threshold_mask(param.data, threshold=strength)
+        zeros_mask_dict[param_name].mask = distiller.threshold_mask(
+            param.data, threshold=strength
+        )
         zeros_mask_dict[param_name].is_regularization_mask = True
 
     @staticmethod

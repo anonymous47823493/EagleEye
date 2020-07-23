@@ -31,7 +31,7 @@ def symmetric_linear_quantization_params(num_bits, saturation_val):
     is_scalar, sat_val = _prep_saturation_val_tensor(saturation_val)
 
     if any(sat_val < 0):
-        raise ValueError('Saturation value must be >= 0')
+        raise ValueError("Saturation value must be >= 0")
 
     # Leave one bit for sign
     n = 2 ** (num_bits - 1) - 1
@@ -48,8 +48,9 @@ def symmetric_linear_quantization_params(num_bits, saturation_val):
     return scale, zero_point
 
 
-def asymmetric_linear_quantization_params(num_bits, saturation_min, saturation_max,
-                                          integral_zero_point=True, signed=False):
+def asymmetric_linear_quantization_params(
+    num_bits, saturation_min, saturation_max, integral_zero_point=True, signed=False
+):
     scalar_min, sat_min = _prep_saturation_val_tensor(saturation_min)
     scalar_max, sat_max = _prep_saturation_val_tensor(saturation_max)
     is_scalar = scalar_min and scalar_max
@@ -60,7 +61,7 @@ def asymmetric_linear_quantization_params(num_bits, saturation_min, saturation_m
         sat_min = sat_min.to(sat_max.device)
 
     if any(sat_min > sat_max):
-        raise ValueError('saturation_min must be smaller than saturation_max')
+        raise ValueError("saturation_min must be smaller than saturation_max")
 
     n = 2 ** num_bits - 1
 
@@ -98,7 +99,9 @@ def linear_quantize(input, scale, zero_point, inplace=False):
     return torch.round(scale * input - zero_point)
 
 
-def linear_quantize_clamp(input, scale, zero_point, clamp_min, clamp_max, inplace=False):
+def linear_quantize_clamp(
+    input, scale, zero_point, clamp_min, clamp_max, inplace=False
+):
     output = linear_quantize(input, scale, zero_point, inplace)
     return clamp(output, clamp_min, clamp_max, inplace)
 
@@ -114,7 +117,9 @@ def get_tensor_min_max(t, per_dim=None):
     if per_dim is None:
         return t.min(), t.max()
     if per_dim >= t.dim():
-        raise ValueError('Got per_dim={0}, but tensor only has {1} dimensions', per_dim, t.dim())
+        raise ValueError(
+            "Got per_dim={0}, but tensor only has {1} dimensions", per_dim, t.dim()
+        )
     view_dims = [t.shape[i] for i in range(per_dim + 1)] + [-1]
     tv = t.view(*view_dims)
     return tv.min(dim=-1)[0], tv.max(dim=-1)[0]
@@ -137,9 +142,9 @@ def get_tensor_avg_max_abs(t, across_dim=None):
 
 def get_tensor_mean_n_stds_min_max(t, dim=None, n_stds=1):
     if dim is not None:
-        raise NotImplementedError('Setting dim != None not supported yet')
+        raise NotImplementedError("Setting dim != None not supported yet")
     if n_stds <= 0:
-        raise ValueError('n_stds must be > 0, got {}'.format(n_stds))
+        raise ValueError("n_stds must be > 0, got {}".format(n_stds))
     mean = t.mean()
     std = t.std()
     min_val, max_val = get_tensor_min_max(t)
@@ -171,7 +176,9 @@ def get_scale_approximation_params(fp32_scale, mult_bits, limit=False):
 
 
 def approx_scale_as_mult_and_shift(fp32_scale, mult_bits, limit=False):
-    multiplier, shift_bits = get_scale_approximation_params(fp32_scale, mult_bits, limit=limit)
+    multiplier, shift_bits = get_scale_approximation_params(
+        fp32_scale, mult_bits, limit=limit
+    )
     return multiplier / (2 ** shift_bits)
 
 

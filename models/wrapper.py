@@ -21,15 +21,22 @@ class ModelWrapper(nn.Module):
         super(ModelWrapper, self).__init__()
         if opt.model_name == "mobilenetv1":
             from .mobilenet import MobileNet
+
             self._net = MobileNet(num_classes=opt.num_classes)
         elif opt.model_name == "resnet50":
             from .resnet import resnet50
+
             self._net = resnet50(num_classes=opt.num_classes)
 
-        self.optimizer = optim.SGD(self._net.parameters(),lr=opt.lr,momentum=opt.momentum,weight_decay=opt.weight_decay)
+        self.optimizer = optim.SGD(
+            self._net.parameters(),
+            lr=opt.lr,
+            momentum=opt.momentum,
+            weight_decay=opt.weight_decay,
+        )
         self._criterion = nn.CrossEntropyLoss()
-    
-    def forward(self, x): # test forward
+
+    def forward(self, x):  # test forward
         x, _ = x
 
         self._net.eval()
@@ -38,7 +45,7 @@ class ModelWrapper(nn.Module):
         out = self._net(x)
 
         return out
-    
+
     def get_compress_part(self):
         return self._net
 
@@ -61,7 +68,7 @@ class ModelWrapper(nn.Module):
         from tqdm import tqdm
 
         device = next(self.parameters()).device
-        to_cuda = next(self.parameters()).device.type == 'cuda'
+        to_cuda = next(self.parameters()).device.type == "cuda"
 
         total = 0
         correct = 0
@@ -71,7 +78,9 @@ class ModelWrapper(nn.Module):
         self._net.eval()
         # print('==> evaluating accuracy')
         with torch.no_grad():
-            for i, sample in enumerate(tqdm(dataloader_test, leave=False, desc='evaluating accuracy')):
+            for i, sample in enumerate(
+                tqdm(dataloader_test, leave=False, desc="evaluating accuracy")
+            ):
                 outputs = self.forward(sample)
                 _, predicted = outputs.max(1)
                 targets = sample[1].to(device)
@@ -84,48 +93,49 @@ class ModelWrapper(nn.Module):
                 total += targets.size(0)
         acc = correct / total
         top_5_acc /= total
-        scores = {'accuracy' : round(acc,3)}
+        scores = {"accuracy": round(acc, 3)}
 
         return scores
-    
+
     def load_checkpoint(self, checkpoint_file):
         """
         Function to load pruned model or normal model checkpoint.
         :param str checkpoint_file: path to checkpoint file, such as `models/ckpt/mobilenet.pth`
         """
-        checkpoint = torch.load(checkpoint_file, map_location='cpu')
+        checkpoint = torch.load(checkpoint_file, map_location="cpu")
         net = self.get_compress_part()
         #### load pruned model ####
         for key, module in net.named_modules():
             # torch.nn.BatchNorm2d
             if isinstance(module, nn.BatchNorm2d):
-                module.weight       = torch.nn.Parameter(checkpoint[key + '.weight'])
-                module.bias         = torch.nn.Parameter(checkpoint[key + '.bias'])
+                module.weight = torch.nn.Parameter(checkpoint[key + ".weight"])
+                module.bias = torch.nn.Parameter(checkpoint[key + ".bias"])
                 module.num_features = module.weight.size(0)
-                module.running_mean = module.running_mean[0:module.num_features]
-                module.running_var  = module.running_var[0:module.num_features]
+                module.running_mean = module.running_mean[0 : module.num_features]
+                module.running_var = module.running_var[0 : module.num_features]
             # torch.nn.Conv2d
             elif isinstance(module, nn.Conv2d):
                 # for conv2d layer, bias and groups should be consider
-                module.weight       = torch.nn.Parameter(checkpoint[key + '.weight'])
+                module.weight = torch.nn.Parameter(checkpoint[key + ".weight"])
                 module.out_channels = module.weight.size(0)
                 module.in_channels = module.weight.size(1)
                 if module.groups is not 1:
                     # group convolution case
                     # only support for MobileNet, pointwise conv
-                    module.in_channels  = module.weight.size(0) 
+                    module.in_channels = module.weight.size(0)
                     module.groups = module.in_channels
-                if key + '.bias' in checkpoint:
-                    module.bias   = torch.nn.Parameter(checkpoint[key + '.bias'])
+                if key + ".bias" in checkpoint:
+                    module.bias = torch.nn.Parameter(checkpoint[key + ".bias"])
             # torch.nn.Linear
             elif isinstance(module, nn.Linear):
-                module.weight       = torch.nn.Parameter(checkpoint[key + '.weight'])
-                if key + '.bias' in checkpoint:
-                    module.bias = torch.nn.Parameter(checkpoint[key + '.bias'])
+                module.weight = torch.nn.Parameter(checkpoint[key + ".weight"])
+                if key + ".bias" in checkpoint:
+                    module.bias = torch.nn.Parameter(checkpoint[key + ".bias"])
                 module.out_features = module.weight.size(0)
-                module.in_features  = module.weight.size(1)
+                module.in_features = module.weight.size(1)
 
         net.load_state_dict(checkpoint)
+
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""

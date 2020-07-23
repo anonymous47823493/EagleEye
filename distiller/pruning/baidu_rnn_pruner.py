@@ -20,6 +20,7 @@ from distiller.utils import *
 
 import distiller
 
+
 class BaiduRNNPruner(_ParameterPruner):
     """An element-wise pruner for RNN networks.
 
@@ -73,24 +74,28 @@ class BaiduRNNPruner(_ParameterPruner):
         if param_name not in self.params_names:
             return
 
-        starting_epoch = meta['starting_epoch']
-        current_epoch = meta['current_epoch']
-        ending_epoch = meta['ending_epoch']
-        freq = meta['frequency']
+        starting_epoch = meta["starting_epoch"]
+        current_epoch = meta["current_epoch"]
+        ending_epoch = meta["ending_epoch"]
+        freq = meta["frequency"]
 
         ramp_epoch = self.ramp_epoch_offset + starting_epoch
 
         # Calculate start slope
         if self.start_slope is None:
             # We want to calculate these values only once, and then cache them.
-            self.start_slope = (2 * self.q * freq) / (2*(ramp_epoch - starting_epoch) + 3*(ending_epoch - ramp_epoch))
+            self.start_slope = (2 * self.q * freq) / (
+                2 * (ramp_epoch - starting_epoch) + 3 * (ending_epoch - ramp_epoch)
+            )
             self.ramp_slope = self.start_slope * self.ramp_slope_mult
 
         if current_epoch < ramp_epoch:
             eps = self.start_slope * (current_epoch - starting_epoch + 1) / freq
         else:
-            eps = (self.start_slope * (ramp_epoch - starting_epoch + 1) +
-                   self.ramp_slope  * (current_epoch  - ramp_epoch + 1)) / freq
+            eps = (
+                self.start_slope * (ramp_epoch - starting_epoch + 1)
+                + self.ramp_slope * (current_epoch - ramp_epoch + 1)
+            ) / freq
 
         # After computing the threshold, we can create the mask
         zeros_mask_dict[param_name].mask = distiller.threshold_mask(param.data, eps)

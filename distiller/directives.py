@@ -24,6 +24,7 @@ import torch
 import numpy as np
 from collections import defaultdict
 import logging
+
 msglogger = logging.getLogger()
 
 from torchnet.meter import AverageValueMeter
@@ -34,6 +35,7 @@ class FreezeTraining(object):
     def __init__(self, name):
         print("------FreezeTraining--------")
         self.name = name
+
 
 def freeze_training(model, which_params, freeze):
     """This function will freeze/defrost training for certain layers.
@@ -50,13 +52,13 @@ def freeze_training(model, which_params, freeze):
                 # see: http://pytorch.org/docs/master/notes/autograd.html?highlight=grad_fn
                 param.requires_grad = not freeze
                 if freeze:
-                    msglogger.info('Freezing: ' + pname)
+                    msglogger.info("Freezing: " + pname)
                 else:
-                    msglogger.info('Defrosting: ' + pname)
+                    msglogger.info("Defrosting: " + pname)
 
 
 def freeze_all(model, freeze):
-    msglogger.info('{} all parameters'.format('Freezing' if freeze else 'Defrosting'))
+    msglogger.info("{} all parameters".format("Freezing" if freeze else "Defrosting"))
     for param in model.parameters():
         param.requires_grad = not freeze
 
@@ -76,11 +78,13 @@ def adjust_dropout(module, new_probabilty):
         over-fitting. As pruning already reduced model capacity, the retraining dropout ratio
         should be smaller.
     """
-    if type(module) in [torch.nn.Dropout,
-                        torch.nn.Dropout2d,
-                        torch.nn.Dropout3d,
-                        torch.nn.AlphaDropout]:
-        msglogger.info("Adjusting dropout probability")# for {}".format(str(module)))
+    if type(module) in [
+        torch.nn.Dropout,
+        torch.nn.Dropout2d,
+        torch.nn.Dropout3d,
+        torch.nn.AlphaDropout,
+    ]:
+        msglogger.info("Adjusting dropout probability")  # for {}".format(str(module)))
         module.p = new_probabilty
     else:
         for child in module.children():

@@ -41,8 +41,8 @@ def model_device(model):
     """Determine the device the model is allocated on."""
     # Source: https://discuss.pytorch.org/t/how-to-check-if-model-is-on-cuda/180
     if next(model.parameters()).is_cuda:
-        return 'cuda'
-    return 'cpu'
+        return "cuda"
+    return "cpu"
 
 
 def optimizer_device_name(opt):
@@ -56,7 +56,9 @@ def to_np(var):
 def size2str(torch_size):
     if isinstance(torch_size, torch.Size):
         return size_to_str(torch_size)
-    if isinstance(torch_size, torch.FloatTensor) or isinstance(torch_size, torch.cuda.FloatTensor):
+    if isinstance(torch_size, torch.FloatTensor) or isinstance(
+        torch_size, torch.cuda.FloatTensor
+    ):
         return size_to_str(torch_size.size())
     if isinstance(torch_size, torch.autograd.Variable):
         return size_to_str(torch_size.data.size())
@@ -67,8 +69,12 @@ def size2str(torch_size):
 
 def size_to_str(torch_size):
     """Convert a pytorch Size object to a string"""
-    assert isinstance(torch_size, torch.Size) or isinstance(torch_size, tuple) or isinstance(torch_size, list)
-    return '('+(', ').join(['%d' % v for v in torch_size])+')'
+    assert (
+        isinstance(torch_size, torch.Size)
+        or isinstance(torch_size, tuple)
+        or isinstance(torch_size, list)
+    )
+    return "(" + (", ").join(["%d" % v for v in torch_size]) + ")"
 
 
 def pretty_int(i):
@@ -113,7 +119,7 @@ def find_module_by_fq_name(model, fq_mod_name):
         The module or None, if the module was not found.
     """
     for module in model.modules():
-        if hasattr(module, 'distiller_name') and fq_mod_name == module.distiller_name:
+        if hasattr(module, "distiller_name") and fq_mod_name == module.distiller_name:
             return module
     return None
 
@@ -137,17 +143,22 @@ def denormalize_module_name(parallel_model, normalized_name):
     """Convert back from the normalized form of the layer name, to PyTorch's name
     which contains "artifacts" if DataParallel is used.
     """
-    fully_qualified_name = [mod_name for mod_name, _ in parallel_model.named_modules() if
-                            normalize_module_name(mod_name) == normalized_name]
+    fully_qualified_name = [
+        mod_name
+        for mod_name, _ in parallel_model.named_modules()
+        if normalize_module_name(mod_name) == normalized_name
+    ]
     if len(fully_qualified_name) > 0:
         return fully_qualified_name[-1]
     else:
-        return normalized_name   # Did not find a module with the name <normalized_name>
+        return normalized_name  # Did not find a module with the name <normalized_name>
 
 
 def volume(tensor):
     """return the volume of a pytorch tensor"""
-    if isinstance(tensor, torch.FloatTensor) or isinstance(tensor, torch.cuda.FloatTensor):
+    if isinstance(tensor, torch.FloatTensor) or isinstance(
+        tensor, torch.cuda.FloatTensor
+    ):
         return np.prod(tensor.shape)
     if isinstance(tensor, tuple) or isinstance(tensor, list):
         return np.prod(tensor)
@@ -195,7 +206,7 @@ def sparsity_3D(tensor):
     view_3d = tensor.view(-1, tensor.size(1) * tensor.size(2) * tensor.size(3))
     num_filters = view_3d.size()[0]
     nonzero_filters = len(torch.nonzero(view_3d.abs().sum(dim=1)))
-    return 1 - nonzero_filters/num_filters
+    return 1 - nonzero_filters / num_filters
 
 
 def density_3D(tensor):
@@ -232,7 +243,7 @@ def sparsity_2D(tensor):
 
     num_structs = view_2d.size()[0]
     nonzero_structs = len(torch.nonzero(view_2d.abs().sum(dim=1)))
-    return 1 - nonzero_structs/num_structs
+    return 1 - nonzero_structs / num_structs
 
 
 def density_2D(tensor):
@@ -256,7 +267,7 @@ def sparsity_ch(tensor):
     # Now group by channels
     k_sums_mat = kernel_sums.view(num_filters, num_kernels_per_filter).t()
     nonzero_channels = len(torch.nonzero(k_sums_mat.abs().sum(dim=1)))
-    return 1 - nonzero_channels/num_kernels_per_filter
+    return 1 - nonzero_channels / num_kernels_per_filter
 
 
 def density_ch(tensor):
@@ -276,7 +287,9 @@ def sparsity_blocks(tensor, block_shape):
         raise ValueError("Block shape must be specified as a 4-element tuple")
     block_repetitions, block_depth, block_height, block_width = block_shape
     if not block_width == block_height == 1:
-        raise ValueError("Currently the only supported block shape is: block_repetitions x block_depth x 1 x 1")
+        raise ValueError(
+            "Currently the only supported block shape is: block_repetitions x block_depth x 1 x 1"
+        )
 
     super_block_volume = volume(block_shape)
     num_super_blocks = volume(tensor) / super_block_volume
@@ -287,22 +300,22 @@ def sparsity_blocks(tensor, block_shape):
     # Create a view where each block is a column
     if block_depth > 1:
         view_dims = (
-            num_filters*num_channels//(block_repetitions*block_depth),
-            block_repetitions*block_depth,
+            num_filters * num_channels // (block_repetitions * block_depth),
+            block_repetitions * block_depth,
             kernel_size,
-            )
+        )
     else:
         view_dims = (
             num_filters // block_repetitions,
             block_repetitions,
             -1,
-            )
+        )
     view1 = tensor.view(*view_dims)
 
     # Next, compute the sums of each column (block)
     block_sums = view1.abs().sum(dim=1)
     nonzero_blocks = len(torch.nonzero(block_sums))
-    return 1 - nonzero_blocks/num_super_blocks
+    return 1 - nonzero_blocks / num_super_blocks
 
 
 def sparsity_matrix(tensor, dim):
@@ -311,8 +324,8 @@ def sparsity_matrix(tensor, dim):
         return 0
 
     num_structs = tensor.size()[dim]
-    nonzero_structs = len(torch.nonzero(tensor.abs().sum(dim=1-dim)))
-    return 1 - nonzero_structs/num_structs
+    nonzero_structs = len(torch.nonzero(tensor.abs().sum(dim=1 - dim)))
+    return 1 - nonzero_structs / num_structs
 
 
 def sparsity_cols(tensor, transposed=True):
@@ -373,11 +386,13 @@ def model_params_stats(model, param_dims=[2, 4]):
     params_cnt = 0
     params_nnz_cnt = 0
     for name, param in model.state_dict().items():
-        if param.dim() in param_dims and any(type in name for type in ['weight', 'bias']):
+        if param.dim() in param_dims and any(
+            type in name for type in ["weight", "bias"]
+        ):
             _density = density(param)
             params_cnt += torch.numel(param)
             params_nnz_cnt += param.numel() * _density
-    model_sparsity = (1 - params_nnz_cnt/params_cnt)*100
+    model_sparsity = (1 - params_nnz_cnt / params_cnt) * 100
     return model_sparsity, params_cnt, params_nnz_cnt
 
 
@@ -398,7 +413,9 @@ def model_numel(model, param_dims=[2, 4]):
     total_numel = 0
     for name, param in model.state_dict().items():
         # Extract just the actual parameter's name, which in this context we treat as its "type"
-        if param.dim() in param_dims and any(type in name for type in ['weight', 'bias']):
+        if param.dim() in param_dims and any(
+            type in name for type in ["weight", "bias"]
+        ):
             total_numel += torch.numel(param)
     return total_numel
 
@@ -423,13 +440,19 @@ def activation_channels_l1(activation):
     activations in the mini-batch, compute the mean of the L! magnitude of each channel).
     """
     if activation.dim() == 4:
-        view_2d = activation.view(-1, activation.size(2) * activation.size(3))  # (batch*channels) x (h*w)
+        view_2d = activation.view(
+            -1, activation.size(2) * activation.size(3)
+        )  # (batch*channels) x (h*w)
         featuremap_norms = view_2d.norm(p=1, dim=1)  # (batch*channels) x 1
-        featuremap_norms_mat = featuremap_norms.view(activation.size(0), activation.size(1))  # batch x channels
+        featuremap_norms_mat = featuremap_norms.view(
+            activation.size(0), activation.size(1)
+        )  # batch x channels
     elif activation.dim() == 2:
         featuremap_norms_mat = activation.norm(p=1, dim=1)  # batch x 1
     else:
-        raise ValueError("activation_channels_l1: Unsupported shape: ".format(activation.shape))
+        raise ValueError(
+            "activation_channels_l1: Unsupported shape: ".format(activation.shape)
+        )
     # We need to move the results back to the CPU
     return featuremap_norms_mat.mean(dim=0).cpu()
 
@@ -446,13 +469,19 @@ def activation_channels_means(activation):
     activations in the mini-batch, compute the mean of the L1 magnitude of each channel).
     """
     if activation.dim() == 4:
-        view_2d = activation.view(-1, activation.size(2) * activation.size(3))  # (batch*channels) x (h*w)
+        view_2d = activation.view(
+            -1, activation.size(2) * activation.size(3)
+        )  # (batch*channels) x (h*w)
         featuremap_means = view_2d.mean(dim=1)  # (batch*channels) x 1
-        featuremap_means_mat = featuremap_means.view(activation.size(0), activation.size(1))  # batch x channels
+        featuremap_means_mat = featuremap_means.view(
+            activation.size(0), activation.size(1)
+        )  # batch x channels
     elif activation.dim() == 2:
         featuremap_means_mat = activation.mean(dim=1)  # batch x 1
     else:
-        raise ValueError("activation_channels_means: Unsupported shape: ".format(activation.shape))
+        raise ValueError(
+            "activation_channels_means: Unsupported shape: ".format(activation.shape)
+        )
     # We need to move the results back to the CPU
     return featuremap_means_mat.mean(dim=0).cpu()
 
@@ -471,17 +500,31 @@ def activation_channels_apoz(activation):
     Returns - for each channel: the batch-mean of its sparsity.
     """
     if activation.dim() == 4:
-        view_2d = activation.view(-1, activation.size(2) * activation.size(3))  # (batch*channels) x (h*w)
-        featuremap_apoz = view_2d.abs().gt(0).sum(dim=1).float() / (activation.size(2) * activation.size(3))  # (batch*channels) x 1
-        featuremap_apoz_mat = featuremap_apoz.view(activation.size(0), activation.size(1))  # batch x channels
+        view_2d = activation.view(
+            -1, activation.size(2) * activation.size(3)
+        )  # (batch*channels) x (h*w)
+        featuremap_apoz = view_2d.abs().gt(0).sum(dim=1).float() / (
+            activation.size(2) * activation.size(3)
+        )  # (batch*channels) x 1
+        featuremap_apoz_mat = featuremap_apoz.view(
+            activation.size(0), activation.size(1)
+        )  # batch x channels
     elif activation.dim() == 2:
-        featuremap_apoz_mat = activation.abs().gt(0).sum(dim=1).float() / activation.size(1)  # batch x 1
+        featuremap_apoz_mat = activation.abs().gt(0).sum(
+            dim=1
+        ).float() / activation.size(
+            1
+        )  # batch x 1
     else:
-        raise ValueError("activation_channels_apoz: Unsupported shape: ".format(activation.shape))
+        raise ValueError(
+            "activation_channels_apoz: Unsupported shape: ".format(activation.shape)
+        )
     return 100 - featuremap_apoz_mat.mean(dim=0).mul(100).cpu()
 
 
-def log_training_progress(stats_dict, params_dict, epoch, steps_completed, total_steps, log_freq, loggers):
+def log_training_progress(
+    stats_dict, params_dict, epoch, steps_completed, total_steps, log_freq, loggers
+):
     """Log information about the training progress, and the distribution of the weight tensors.
 
     Args:
@@ -504,9 +547,9 @@ def log_training_progress(stats_dict, params_dict, epoch, steps_completed, total
     if not isinstance(loggers, list):
         loggers = [loggers]
     for logger in loggers:
-        logger.log_training_progress(stats_dict, epoch,
-                                     steps_completed,
-                                     total_steps, freq=log_freq)
+        logger.log_training_progress(
+            stats_dict, epoch, steps_completed, total_steps, freq=log_freq
+        )
         logger.log_weights_distribution(params_dict, steps_completed)
 
 
@@ -515,7 +558,9 @@ def log_activation_statsitics(epoch, phase, loggers, collector):
     if collector is None:
         return
     for logger in loggers:
-        logger.log_activation_statsitic(phase, collector.stat_name, collector.value(), epoch)
+        logger.log_activation_statsitic(
+            phase, collector.stat_name, collector.value(), epoch
+        )
 
 
 def log_weights_sparsity(model, epoch, loggers):
@@ -524,7 +569,16 @@ def log_weights_sparsity(model, epoch, loggers):
         logger.log_weights_sparsity(model, epoch)
 
 
-def log_model_buffers(model, buffer_names, tag_prefix, epoch, steps_completed, total_steps, log_freq, loggers=()):
+def log_model_buffers(
+    model,
+    buffer_names,
+    tag_prefix,
+    epoch,
+    steps_completed,
+    total_steps,
+    log_freq,
+    loggers=(),
+):
     """
     Log values of model buffers. 'buffer_names' is a list of buffers to be logged (which not necessarily exist
     in all layers in the model).
@@ -547,7 +601,15 @@ def log_model_buffers(model, buffer_names, tag_prefix, epoch, steps_completed, t
         loggers: An iterable of loggers to send the log info to
     """
     for logger in loggers:
-        logger.log_model_buffers(model, buffer_names, tag_prefix, epoch, steps_completed, total_steps, log_freq)
+        logger.log_model_buffers(
+            model,
+            buffer_names,
+            tag_prefix,
+            epoch,
+            steps_completed,
+            total_steps,
+            log_freq,
+        )
 
 
 def has_children(module):
@@ -563,9 +625,9 @@ def get_dummy_input(dataset, device=None):
 
     If a device is specified, then the dummay_input is moved to that device.
     """
-    if dataset == 'imagenet':
+    if dataset == "imagenet":
         dummy_input = torch.randn(1, 3, 224, 224)
-    elif dataset == 'cifar10':
+    elif dataset == "cifar10":
         dummy_input = torch.randn(1, 3, 32, 32)
     else:
         raise ValueError("dataset %s is not supported" % dataset)
@@ -579,6 +641,7 @@ def make_non_parallel_copy(model):
 
     torch.nn.DataParallel instances are removed.
     """
+
     def replace_data_parallel(container):
         for name, module in container.named_children():
             if isinstance(module, nn.DataParallel):
@@ -596,7 +659,7 @@ def make_non_parallel_copy(model):
 
 
 def set_deterministic():
-    msglogger.debug('set_deterministic is called')
+    msglogger.debug("set_deterministic is called")
     torch.manual_seed(0)
     random.seed(0)
     np.random.seed(0)
@@ -609,6 +672,7 @@ def yaml_ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict)
     Function to load YAML file using an OrderedDict
     See: https://stackoverflow.com/questions/5121931/in-python-how-can-you-load-yaml-mappings-as-ordereddicts
     """
+
     class OrderedLoader(Loader):
         pass
 
@@ -617,23 +681,29 @@ def yaml_ordered_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict)
         return object_pairs_hook(loader.construct_pairs(node))
 
     OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, construct_mapping
+    )
 
     return yaml.load(stream, OrderedLoader)
 
 
-def float_range_argparse_checker(min_val=0., max_val=1., exc_min=False, exc_max=False):
+def float_range_argparse_checker(
+    min_val=0.0, max_val=1.0, exc_min=False, exc_max=False
+):
     def checker(val_str):
         val = float(val_str)
-        min_op, min_op_str = (operator.gt, '>') if exc_min else (operator.ge, '>=')
-        max_op, max_op_str = (operator.lt, '<') if exc_max else (operator.le, '<=')
+        min_op, min_op_str = (operator.gt, ">") if exc_min else (operator.ge, ">=")
+        max_op, max_op_str = (operator.lt, "<") if exc_max else (operator.le, "<=")
         if min_op(val, min_val) and max_op(val, max_val):
             return val
         raise argparse.ArgumentTypeError(
-            'Value must be {} {} and {} {} (received {})'.format(min_op_str, min_val, max_op_str, max_val, val))
+            "Value must be {} {} and {} {} (received {})".format(
+                min_op_str, min_val, max_op_str, max_val, val
+            )
+        )
+
     if min_val >= max_val:
-        raise ValueError('min_val must be less than max_val')
+        raise ValueError("min_val must be less than max_val")
     return checker
 
 
@@ -645,7 +715,11 @@ def filter_kwargs(dict_to_filter, function_to_call):
     """
 
     sig = inspect.signature(function_to_call)
-    filter_keys = [param.name for param in sig.parameters.values() if (param.kind == param.POSITIONAL_OR_KEYWORD)]
+    filter_keys = [
+        param.name
+        for param in sig.parameters.values()
+        if (param.kind == param.POSITIONAL_OR_KEYWORD)
+    ]
     valid_args = {}
     invalid_args = {}
 
@@ -663,7 +737,8 @@ def convert_tensors_recursively_to(val, *args, **kwargs):
         return val.to(*args, **kwargs)
 
     if isinstance(val, (tuple, list)):
-        return type(val)(convert_tensors_recursively_to(item, *args, **kwargs) for item in val)
+        return type(val)(
+            convert_tensors_recursively_to(item, *args, **kwargs) for item in val
+        )
 
     return val
-

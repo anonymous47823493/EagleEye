@@ -20,17 +20,17 @@ def main():
     # get options
     opt = BaseOptions().parse()
     # basic settings
-    os.environ["CUDA_VISIBLE_DEVICES"]=str(opt.gpu_ids)[1:-1]
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(opt.gpu_ids)[1:-1]
 
     if torch.cuda.is_available():
-        device = 'cuda'
+        device = "cuda"
         torch.backends.cudnn.benchmark = True
     else:
-        device = 'cpu'
+        device = "cpu"
     ##################### Get Dataloader ####################
     _, dataloader_test = custom_get_dataloaders(opt)
     # dummy_input is sample input of dataloaders
-    if hasattr(dataloader_test, 'dataset'):
+    if hasattr(dataloader_test, "dataset"):
         dummy_input = dataloader_test.dataset.__getitem__(0)
         dummy_input = dummy_input[0]
         dummy_input = dummy_input.unsqueeze(0)
@@ -42,7 +42,7 @@ def main():
     net = net.to(device)
     net.parallel(opt.gpu_ids)
     flops_before, params_before = model_summary(net.get_compress_part(), dummy_input)
-    
+
     del net
     #####################  Evaluate Pruned Model  ####################
     net = ModelWrapper(opt)
@@ -54,13 +54,26 @@ def main():
     acc_after = net.get_eval_scores(dataloader_test)
 
     #################### Report #####################
-    print('######### Report #########')
-    print('Model:{}'.format(opt.model_name))
-    print('Checkpoint:{}'.format(opt.checkpoint))
-    print('FLOPs of Original Model:{:.3f}G;Params of Original Model:{:.2f}M'.format(flops_before / 1e9, params_before / 1e6))
-    print('FLOPs of Pruned   Model:{:.3f}G;Params of Pruned   Model:{:.2f}M'.format(flops_after / 1e9, params_after / 1e6))
-    print('Top-1 Acc of Pruned Model on {}:{}'.format(opt.dataset_name, acc_after['accuracy']))
-    print('##########################')
+    print("######### Report #########")
+    print("Model:{}".format(opt.model_name))
+    print("Checkpoint:{}".format(opt.checkpoint))
+    print(
+        "FLOPs of Original Model:{:.3f}G;Params of Original Model:{:.2f}M".format(
+            flops_before / 1e9, params_before / 1e6
+        )
+    )
+    print(
+        "FLOPs of Pruned   Model:{:.3f}G;Params of Pruned   Model:{:.2f}M".format(
+            flops_after / 1e9, params_after / 1e6
+        )
+    )
+    print(
+        "Top-1 Acc of Pruned Model on {}:{}".format(
+            opt.dataset_name, acc_after["accuracy"]
+        )
+    )
+    print("##########################")
+
 
 if __name__ == "__main__":
     main()
