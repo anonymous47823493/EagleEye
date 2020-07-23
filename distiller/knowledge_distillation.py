@@ -20,8 +20,9 @@ from collections import namedtuple
 
 from .policy import ScheduledTrainingPolicy, PolicyLoss, LossComponent
 
-DistillationLossWeights = namedtuple('DistillationLossWeights',
-                                     ['distill', 'student', 'teacher'])
+DistillationLossWeights = namedtuple(
+    "DistillationLossWeights", ["distill", "student", "teacher"]
+)
 
 
 def add_distillation_args(argparser, arch_choices=None, enable_pretrained=False):
@@ -33,23 +34,66 @@ def add_distillation_args(argparser, arch_choices=None, enable_pretrained=False)
         arch_choices: Optional list of choices to be enforced by the parser for model selection
         enable_pretrained (bool): Flag to enable/disable argument for "pre-trained" models.
     """
-    group = argparser.add_argument_group('Knowledge Distillation Training Arguments')
-    group.add_argument('--kd-teacher', choices=arch_choices, metavar='ARCH',
-                       help='Model architecture for teacher model')
+    group = argparser.add_argument_group("Knowledge Distillation Training Arguments")
+    group.add_argument(
+        "--kd-teacher",
+        choices=arch_choices,
+        metavar="ARCH",
+        help="Model architecture for teacher model",
+    )
     if enable_pretrained:
-        group.add_argument('--kd-pretrained', action='store_true', help='Use pre-trained model for teacher')
-    group.add_argument('--kd-resume', type=str, default='', metavar='PATH',
-                       help='Path to checkpoint from which to load teacher weights')
-    group.add_argument('--kd-temperature', '--kd-temp', dest='kd_temp', type=float, default=1.0, metavar='TEMP',
-                       help='Knowledge distillation softmax temperature')
-    group.add_argument('--kd-distill-wt', '--kd-dw', type=float, default=0.5, metavar='WEIGHT',
-                       help='Weight for distillation loss (student vs. teacher soft targets)')
-    group.add_argument('--kd-student-wt', '--kd-sw', type=float, default=0.5, metavar='WEIGHT',
-                       help='Weight for student vs. labels loss')
-    group.add_argument('--kd-teacher-wt', '--kd-tw', type=float, default=0.0, metavar='WEIGHT',
-                       help='Weight for teacher vs. labels loss')
-    group.add_argument('--kd-start-epoch', type=int, default=0, metavar='EPOCH_NUM',
-                       help='Epoch from which to enable distillation')
+        group.add_argument(
+            "--kd-pretrained",
+            action="store_true",
+            help="Use pre-trained model for teacher",
+        )
+    group.add_argument(
+        "--kd-resume",
+        type=str,
+        default="",
+        metavar="PATH",
+        help="Path to checkpoint from which to load teacher weights",
+    )
+    group.add_argument(
+        "--kd-temperature",
+        "--kd-temp",
+        dest="kd_temp",
+        type=float,
+        default=1.0,
+        metavar="TEMP",
+        help="Knowledge distillation softmax temperature",
+    )
+    group.add_argument(
+        "--kd-distill-wt",
+        "--kd-dw",
+        type=float,
+        default=0.5,
+        metavar="WEIGHT",
+        help="Weight for distillation loss (student vs. teacher soft targets)",
+    )
+    group.add_argument(
+        "--kd-student-wt",
+        "--kd-sw",
+        type=float,
+        default=0.5,
+        metavar="WEIGHT",
+        help="Weight for student vs. labels loss",
+    )
+    group.add_argument(
+        "--kd-teacher-wt",
+        "--kd-tw",
+        type=float,
+        default=0.0,
+        metavar="WEIGHT",
+        help="Weight for teacher vs. labels loss",
+    )
+    group.add_argument(
+        "--kd-start-epoch",
+        type=int,
+        default=0,
+        metavar="EPOCH_NUM",
+        help="Epoch from which to enable distillation",
+    )
 
 
 class KnowledgeDistillationPolicy(ScheduledTrainingPolicy):
@@ -84,13 +128,21 @@ class KnowledgeDistillationPolicy(ScheduledTrainingPolicy):
         (https://arxiv.org/abs/1711.05852)
 
     """
-    def __init__(self, student_model, teacher_model, temperature=1.0,
-                 loss_weights=DistillationLossWeights(0.5, 0.5, 0)):
+
+    def __init__(
+        self,
+        student_model,
+        teacher_model,
+        temperature=1.0,
+        loss_weights=DistillationLossWeights(0.5, 0.5, 0),
+    ):
         super(KnowledgeDistillationPolicy, self).__init__()
 
         if loss_weights.teacher != 0:
-            raise NotImplementedError('Using teacher vs. labels loss is not supported yet, '
-                                      'for now teacher loss weight must be set to 0')
+            raise NotImplementedError(
+                "Using teacher vs. labels loss is not supported yet, "
+                "for now teacher loss weight must be set to 0"
+            )
 
         self.active = False
 
@@ -132,8 +184,16 @@ class KnowledgeDistillationPolicy(ScheduledTrainingPolicy):
     def on_epoch_end(self, model, zeros_mask_dict, meta):
         self.active = False
 
-    def before_backward_pass(self, model, epoch, minibatch_id, minibatches_per_epoch, loss, zeros_mask_dict,
-                             optimizer=None):
+    def before_backward_pass(
+        self,
+        model,
+        epoch,
+        minibatch_id,
+        minibatches_per_epoch,
+        loss,
+        zeros_mask_dict,
+        optimizer=None,
+    ):
         # TODO: Consider adding 'labels' as an argument to this callback, so we can support teacher vs. labels loss
         # (Otherwise we can't do it with a sub-class of ScheduledTrainingPolicy)
 
@@ -141,23 +201,33 @@ class KnowledgeDistillationPolicy(ScheduledTrainingPolicy):
             return None
 
         if self.last_teacher_logits is None or self.last_students_logits is None:
-            raise RuntimeError("KnowledgeDistillationPolicy: Student and or teacher logits were not cached. "
-                               "Make sure to call KnowledgeDistillationPolicy.forward() in your script instead of "
-                               "calling the model directly.")
+            raise RuntimeError(
+                "KnowledgeDistillationPolicy: Student and or teacher logits were not cached. "
+                "Make sure to call KnowledgeDistillationPolicy.forward() in your script instead of "
+                "calling the model directly."
+            )
 
         # Calculate distillation loss
-        soft_log_probs = F.log_softmax(self.last_students_logits / self.temperature, dim=1)
+        soft_log_probs = F.log_softmax(
+            self.last_students_logits / self.temperature, dim=1
+        )
         # soft_targets = F.softmax(self.cached_teacher_logits[minibatch_id] / self.temperature)
         soft_targets = F.softmax(self.last_teacher_logits / self.temperature, dim=1)
 
         # The averaging used in PyTorch KL Div implementation is wrong, so we work around as suggested in
         # https://pytorch.org/docs/stable/nn.html#kldivloss
         # (Also see https://github.com/pytorch/pytorch/issues/6622, https://github.com/pytorch/pytorch/issues/2259)
-        distillation_loss = F.kl_div(soft_log_probs, soft_targets.detach(), size_average=False) / soft_targets.shape[0]
+        distillation_loss = (
+            F.kl_div(soft_log_probs, soft_targets.detach(), size_average=False)
+            / soft_targets.shape[0]
+        )
 
         # The loss passed to the callback is the student's loss vs. the true labels, so we can use it directly, no
         # need to calculate again
 
-        overall_loss = self.loss_wts.student * loss + self.loss_wts.distill * distillation_loss
-        return PolicyLoss(overall_loss,
-                          [LossComponent('Distill Loss', distillation_loss)])
+        overall_loss = (
+            self.loss_wts.student * loss + self.loss_wts.distill * distillation_loss
+        )
+        return PolicyLoss(
+            overall_loss, [LossComponent("Distill Loss", distillation_loss)]
+        )

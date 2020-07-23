@@ -17,7 +17,9 @@
 import logging
 from .pruner import _ParameterPruner
 import distiller
+
 msglogger = logging.getLogger()
+
 
 class StructureParameterPruner(distiller.GroupThresholdMixin, _ParameterPruner):
     """Prune parameter structures.
@@ -28,6 +30,7 @@ class StructureParameterPruner(distiller.GroupThresholdMixin, _ParameterPruner):
     We use the average, instead of plain L1-norm, because we don't want the threshold to depend on
     the structure size.
     """
+
     def __init__(self, name, model, reg_regims, threshold_criteria):
         super(StructureParameterPruner, self).__init__(name)
         self.name = name
@@ -42,7 +45,6 @@ class StructureParameterPruner(distiller.GroupThresholdMixin, _ParameterPruner):
 
         group_type = self.reg_regims[param_name][1]
         threshold = self.reg_regims[param_name][0]
-        zeros_mask_dict[param_name].mask = self.group_threshold_mask(param,
-                                                                     group_type,
-                                                                     threshold,
-                                                                     self.threshold_criteria)
+        zeros_mask_dict[param_name].mask = self.group_threshold_mask(
+            param, group_type, threshold, self.threshold_criteria
+        )

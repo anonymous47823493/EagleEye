@@ -17,7 +17,7 @@
 from math import floor
 import torch.nn as nn
 
-__all__ = ['mobilenet', 'mobilenet_025', 'mobilenet_050', 'mobilenet_075']
+__all__ = ["mobilenet", "mobilenet_025", "mobilenet_050", "mobilenet_075"]
 
 
 class MobileNet(nn.Module):
@@ -25,13 +25,21 @@ class MobileNet(nn.Module):
         super(MobileNet, self).__init__()
 
         if channel_multiplier <= 0:
-            raise ValueError('channel_multiplier must be >= 0')
+            raise ValueError("channel_multiplier must be >= 0")
 
         def conv_bn_relu(n_ifm, n_ofm, kernel_size, stride=1, padding=0, groups=1):
             return [
-                nn.Conv2d(n_ifm, n_ofm, kernel_size, stride=stride, padding=padding, groups=groups, bias=False),
+                nn.Conv2d(
+                    n_ifm,
+                    n_ofm,
+                    kernel_size,
+                    stride=stride,
+                    padding=padding,
+                    groups=groups,
+                    bias=False,
+                ),
                 nn.BatchNorm2d(n_ofm),
-                nn.ReLU(inplace=True)
+                nn.ReLU(inplace=True),
             ]
 
         def depthwise_conv(n_ifm, n_ofm, stride):
@@ -41,7 +49,9 @@ class MobileNet(nn.Module):
             )
 
         base_channels = [32, 64, 128, 256, 512, 1024]
-        self.channels = [max(floor(n * channel_multiplier), min_channels) for n in base_channels]
+        self.channels = [
+            max(floor(n * channel_multiplier), min_channels) for n in base_channels
+        ]
 
         self.model = nn.Sequential(
             nn.Sequential(*conv_bn_relu(3, self.channels[0], 3, stride=2, padding=1)),

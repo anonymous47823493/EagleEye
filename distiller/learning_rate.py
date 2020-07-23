@@ -29,6 +29,7 @@ class PolynomialLR(_LRScheduler):
         power (int): Degree of polynomial
         last_epoch (int): The index of last epoch. Default: -1.
     """
+
     def __init__(self, optimizer, T_max, power, last_epoch=-1):
         self.T_max = T_max
         self.power = power
@@ -36,8 +37,10 @@ class PolynomialLR(_LRScheduler):
 
     def get_lr(self):
         # base_lr * (1 - iter/max_iter) ^ (power)
-        return [base_lr * (1 - self.last_epoch / self.T_max) ** self.power
-                for base_lr in self.base_lrs]
+        return [
+            base_lr * (1 - self.last_epoch / self.T_max) ** self.power
+            for base_lr in self.base_lrs
+        ]
 
 
 class MultiStepMultiGammaLR(_LRScheduler):
@@ -49,12 +52,15 @@ class MultiStepMultiGammaLR(_LRScheduler):
         gammas (list): List of gamma values. Must have same length as milestones.
         last_epoch (int): The index of last epoch. Default: -1.
     """
+
     def __init__(self, optimizer, milestones, gammas, last_epoch=-1):
         if not list(milestones) == sorted(milestones):
-            raise ValueError('Milestones should be a list of'
-                             ' increasing integers. Got {}', milestones)
+            raise ValueError(
+                "Milestones should be a list of" " increasing integers. Got {}",
+                milestones,
+            )
         if len(milestones) != len(gammas):
-            raise ValueError('Milestones and Gammas lists should be of same length.')
+            raise ValueError("Milestones and Gammas lists should be of same length.")
 
         self.milestones = milestones
         self.multiplicative_gammas = [1]

@@ -20,7 +20,7 @@ import numpy as np
 from .eltwise import EltwiseAdd, EltwiseMult
 from itertools import product
 
-__all__ = ['DistillerLSTMCell', 'DistillerLSTM', 'convert_model_to_distiller_lstm']
+__all__ = ["DistillerLSTMCell", "DistillerLSTM", "convert_model_to_distiller_lstm"]
 
 
 class DistillerLSTMCell(nn.Module):
@@ -34,6 +34,7 @@ class DistillerLSTMCell(nn.Module):
         bias (bool): use bias. default: True
 
     """
+
     def __init__(self, input_size, hidden_size, bias=True):
         super(DistillerLSTMCell, self).__init__()
         self.input_size = input_size
@@ -65,17 +66,20 @@ class DistillerLSTMCell(nn.Module):
         x_bsz, x_device = x.size(1), x.device
         if h is None:
             h = self.init_hidden(x_bsz, device=x_device)
-        
+
         h_prev, c_prev = h
         fc_gate = self.eltwiseadd_gate(self.fc_gate_x(x), self.fc_gate_h(h_prev))
         i, f, g, o = torch.chunk(fc_gate, 4, dim=1)
         i, f, g, o = self.act_i(i), self.act_f(f), self.act_g(g), self.act_o(o)
-        cf, ci = self.eltwisemult_cell_forget(f, c_prev), self.eltwisemult_cell_input(i, g)
+        cf, ci = (
+            self.eltwisemult_cell_forget(f, c_prev),
+            self.eltwisemult_cell_input(i, g),
+        )
         c = self.eltwiseadd_cell(cf, ci)
         h = self.eltwisemult_hidden(o, self.act_h(c))
         return h, c
 
-    def init_hidden(self, batch_size, device='cuda:0'):
+    def init_hidden(self, batch_size, device="cuda:0"):
         h_0 = torch.zeros(batch_size, self.hidden_size).to(device)
         c_0 = torch.zeros(batch_size, self.hidden_size).to(device)
         return h_0, c_0
@@ -87,18 +91,24 @@ class DistillerLSTMCell(nn.Module):
 
     def to_pytorch_impl(self):
         module = nn.LSTMCell(self.input_size, self.hidden_size, self.bias)
-        module.weight_hh, module.weight_ih = \
-            nn.Parameter(self.fc_gate_h.weight.clone().detach()), \
-            nn.Parameter(self.fc_gate_x.weight.clone().detach())
+        module.weight_hh, module.weight_ih = (
+            nn.Parameter(self.fc_gate_h.weight.clone().detach()),
+            nn.Parameter(self.fc_gate_x.weight.clone().detach()),
+        )
         if self.bias:
-            module.bias_hh, module.bias_ih = \
-                nn.Parameter(self.fc_gate_h.bias.clone().detach()), \
-                nn.Parameter(self.fc_gate_x.bias.clone().detach())
+            module.bias_hh, module.bias_ih = (
+                nn.Parameter(self.fc_gate_h.bias.clone().detach()),
+                nn.Parameter(self.fc_gate_x.bias.clone().detach()),
+            )
         return module
 
     @staticmethod
     def from_pytorch_impl(lstmcell: nn.LSTMCell):
-        module = DistillerLSTMCell(input_size=lstmcell.input_size, hidden_size=lstmcell.hidden_size, bias=lstmcell.bias)
+        module = DistillerLSTMCell(
+            input_size=lstmcell.input_size,
+            hidden_size=lstmcell.hidden_size,
+            bias=lstmcell.bias,
+        )
         module.fc_gate_x.weight = nn.Parameter(lstmcell.weight_ih.clone().detach())
         module.fc_gate_h.weight = nn.Parameter(lstmcell.weight_hh.clone().detach())
         if lstmcell.bias:
@@ -108,7 +118,11 @@ class DistillerLSTMCell(nn.Module):
         return module
 
     def __repr__(self):
-        return "%s(%d, %d)" % (self.__class__.__name__, self.input_size, self.hidden_size)
+        return "%s(%d, %d)" % (
+            self.__class__.__name__,
+            self.input_size,
+            self.hidden_size,
+        )
 
 
 def process_sequence_wise(cell, x, h=None):
@@ -174,8 +188,18 @@ class DistillerLSTM(nn.Module):
         bidirectional_type (int): 1 or 2, corresponds to type 1 and type 2 as per
             https://github.com/pytorch/pytorch/issues/4930. default: 2
     """
-    def __init__(self, input_size, hidden_size, num_layers, bias=True, batch_first=False,
-                 dropout=0.5, bidirectional=False, bidirectional_type=2):
+
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        num_layers,
+        bias=True,
+        batch_first=False,
+        dropout=0.5,
+        bidirectional=False,
+        bidirectional_type=2,
+    ):
         super(DistillerLSTM, self).__init__()
         if num_layers < 1:
             raise ValueError("Number of layers has to be at least 1.")
@@ -208,21 +232,33 @@ class DistillerLSTM(nn.Module):
                 # Process the entire sequence at each layer consecutively -
                 # the output of one layer is the sequence processed through the `front` and `back` cells
                 # and the input to the next layers are both `output_front` and `output_back`.
-                self.cells = nn.ModuleList([DistillerLSTMCell(input_size, hidden_size, bias)] +
-                                           [DistillerLSTMCell(2 * hidden_size, hidden_size, bias)
-                                            for _ in range(1, num_layers)])
+                self.cells = nn.ModuleList(
+                    [DistillerLSTMCell(input_size, hidden_size, bias)]
+                    + [
+                        DistillerLSTMCell(2 * hidden_size, hidden_size, bias)
+                        for _ in range(1, num_layers)
+                    ]
+                )
 
-                self.cells_reverse = nn.ModuleList([DistillerLSTMCell(input_size, hidden_size, bias)] +
-                                                   [DistillerLSTMCell(2 * hidden_size, hidden_size, bias)
-                                                    for _ in range(1, num_layers)])
+                self.cells_reverse = nn.ModuleList(
+                    [DistillerLSTMCell(input_size, hidden_size, bias)]
+                    + [
+                        DistillerLSTMCell(2 * hidden_size, hidden_size, bias)
+                        for _ in range(1, num_layers)
+                    ]
+                )
                 self.forward_fn = self._bidirectional_type2_forward
 
             else:
                 raise ValueError("The only allowed types are [1, 2].")
         else:
-            self.cells = nn.ModuleList([DistillerLSTMCell(input_size, hidden_size, bias)] +
-                                       [DistillerLSTMCell(hidden_size, hidden_size, bias)
-                                        for _ in range(1, num_layers)])
+            self.cells = nn.ModuleList(
+                [DistillerLSTMCell(input_size, hidden_size, bias)]
+                + [
+                    DistillerLSTMCell(hidden_size, hidden_size, bias)
+                    for _ in range(1, num_layers)
+                ]
+            )
             self.forward_fn = self.process_layer_wise
             self.layer_chain_fn = self._layer_chain_unidirectional
 
@@ -265,7 +301,9 @@ class DistillerLSTM(nn.Module):
             # we unsqueeze to have a 3D tensor
             h_current = (h[0][:, i, :].unsqueeze(1), h[1][:, i, :].unsqueeze(1))
             # Take only the relevant timesteps according to seq_len
-            sequence = sequence[:seq_len].unsqueeze(1)  # sequence.shape = (seq_len, batch_size=1, input_dim)
+            sequence = sequence[:seq_len].unsqueeze(
+                1
+            )  # sequence.shape = (seq_len, batch_size=1, input_dim)
             # forward pass:
             y, h_current = self.forward_fn(sequence, h_current)
             # sequeeze back the batch into a single sequence
@@ -274,7 +312,10 @@ class DistillerLSTM(nn.Module):
         # our result is a packed sequence
         y = nn.utils.rnn.pack_sequence(y_results)
         # concat hidden states per batches
-        h = torch.cat([t[0] for t in h_results], dim=1), torch.cat([t[1] for t in h_results], dim=1)
+        h = (
+            torch.cat([t[0] for t in h_results], dim=1),
+            torch.cat([t[1] for t in h_results], dim=1),
+        )
         return y, h
 
     def process_layer_wise(self, x, h):
@@ -291,9 +332,17 @@ class DistillerLSTM(nn.Module):
         out = x
         h_h_result = []
         h_c_result = []
-        (h_front_all, c_front_all), (h_back_all, c_back_all) = _unpack_bidirectional_input_h(h)
-        for i, (cell_front, cell_back) in enumerate(zip(self.cells, self.cells_reverse)):
-            h_front, h_back = (h_front_all[i], c_front_all[i]), (h_back_all[i], c_back_all[i])
+        (
+            (h_front_all, c_front_all),
+            (h_back_all, c_back_all),
+        ) = _unpack_bidirectional_input_h(h)
+        for i, (cell_front, cell_back) in enumerate(
+            zip(self.cells, self.cells_reverse)
+        ):
+            h_front, h_back = (
+                (h_front_all[i], c_front_all[i]),
+                (h_back_all[i], c_back_all[i]),
+            )
 
             # Sequence treatment:
             out_front, h_front = process_sequence_wise(cell_front, out, h_front)
@@ -302,7 +351,7 @@ class DistillerLSTM(nn.Module):
 
             h_h_result += [h_front[0], h_back[0]]
             h_c_result += [h_front[1], h_back[1]]
-            if i < self.num_layers-1:
+            if i < self.num_layers - 1:
                 out = self.dropout(out)
         h = torch.stack(h_h_result, dim=0), torch.stack(h_c_result, dim=0)
         return out, h
@@ -340,7 +389,7 @@ class DistillerLSTM(nn.Module):
         for i, cell in enumerate(self.cells):
             h = h_all[i], c_all[i]
             out, hid = cell(out, h)
-            if i < self.num_layers-1:
+            if i < self.num_layers - 1:
                 out = self.dropout(out)
             h_result.append((out, hid))
         h_result = _repackage_hidden_unidirectional(h_result)
@@ -349,8 +398,10 @@ class DistillerLSTM(nn.Module):
     def init_hidden(self, batch_size):
         weight = next(self.parameters())
         n_dir = 2 if self.bidirectional else 1
-        return (weight.new_zeros(self.num_layers * n_dir, batch_size, self.hidden_size),
-                weight.new_zeros(self.num_layers * n_dir, batch_size, self.hidden_size))
+        return (
+            weight.new_zeros(self.num_layers * n_dir, batch_size, self.hidden_size),
+            weight.new_zeros(self.num_layers * n_dir, batch_size, self.hidden_size),
+        )
 
     def init_weights(self):
         for cell in self.hidden_cells:
@@ -361,30 +412,41 @@ class DistillerLSTM(nn.Module):
 
     def to_pytorch_impl(self):
         if self.bidirectional and self.bidirectional_type == 1:
-            raise TypeError("Pytorch implementation of bidirectional LSTM doesn't support type 1.")
+            raise TypeError(
+                "Pytorch implementation of bidirectional LSTM doesn't support type 1."
+            )
 
-        module = nn.LSTM(input_size=self.input_size,
-                         hidden_size=self.hidden_size,
-                         num_layers=self.num_layers,
-                         dropout=self.dropout_factor,
-                         bias=self.bias,
-                         batch_first=self.batch_first,
-                         bidirectional=self.bidirectional)
-        param_gates = ['i', 'h']
+        module = nn.LSTM(
+            input_size=self.input_size,
+            hidden_size=self.hidden_size,
+            num_layers=self.num_layers,
+            dropout=self.dropout_factor,
+            bias=self.bias,
+            batch_first=self.batch_first,
+            bidirectional=self.bidirectional,
+        )
+        param_gates = ["i", "h"]
 
-        param_types = ['weight']
+        param_types = ["weight"]
         if self.bias:
-            param_types.append('bias')
+            param_types.append("bias")
 
-        suffixes = ['']
+        suffixes = [""]
         if self.bidirectional:
-            suffixes.append('_reverse')
+            suffixes.append("_reverse")
 
         for i in range(self.num_layers):
             for ptype, pgate, psuffix in product(param_types, param_gates, suffixes):
-                cell = self.cells[i] if psuffix == '' else self.cells_reverse[i]
-                lstm_pth_param_name = "%s_%sh_l%d%s" % (ptype, pgate, i, psuffix)  # e.g. `weight_ih_l0`
-                gate_name = "fc_gate_%s" % ('x' if pgate == 'i' else 'h')  # `fc_gate_x` or `fc_gate_h`
+                cell = self.cells[i] if psuffix == "" else self.cells_reverse[i]
+                lstm_pth_param_name = "%s_%sh_l%d%s" % (
+                    ptype,
+                    pgate,
+                    i,
+                    psuffix,
+                )  # e.g. `weight_ih_l0`
+                gate_name = "fc_gate_%s" % (
+                    "x" if pgate == "i" else "h"
+                )  # `fc_gate_x` or `fc_gate_h`
                 gate = getattr(cell, gate_name)  # e.g. `cell.fc_gate_x`
                 param_tensor = getattr(gate, ptype).clone().detach()
 
@@ -398,38 +460,54 @@ class DistillerLSTM(nn.Module):
     def from_pytorch_impl(lstm: nn.LSTM):
         bidirectional = lstm.bidirectional
 
-        module = DistillerLSTM(lstm.input_size, lstm.hidden_size, lstm.num_layers, bias=lstm.bias,
-                               batch_first=lstm.batch_first,
-                               dropout=lstm.dropout, bidirectional=bidirectional)
-        param_gates = ['i', 'h']
+        module = DistillerLSTM(
+            lstm.input_size,
+            lstm.hidden_size,
+            lstm.num_layers,
+            bias=lstm.bias,
+            batch_first=lstm.batch_first,
+            dropout=lstm.dropout,
+            bidirectional=bidirectional,
+        )
+        param_gates = ["i", "h"]
 
-        param_types = ['weight']
+        param_types = ["weight"]
         if lstm.bias:
-            param_types.append('bias')
+            param_types.append("bias")
 
-        suffixes = ['']
+        suffixes = [""]
         if bidirectional:
-            suffixes.append('_reverse')
+            suffixes.append("_reverse")
 
         for i in range(lstm.num_layers):
             for ptype, pgate, psuffix in product(param_types, param_gates, suffixes):
-                cell = module.cells[i] if psuffix == '' else module.cells_reverse[i]
-                lstm_pth_param_name = "%s_%sh_l%d%s" % (ptype, pgate, i, psuffix)  # e.g. `weight_ih_l0`
-                gate_name = "fc_gate_%s" % ('x' if pgate == 'i' else 'h')  # `fc_gate_x` or `fc_gate_h`
+                cell = module.cells[i] if psuffix == "" else module.cells_reverse[i]
+                lstm_pth_param_name = "%s_%sh_l%d%s" % (
+                    ptype,
+                    pgate,
+                    i,
+                    psuffix,
+                )  # e.g. `weight_ih_l0`
+                gate_name = "fc_gate_%s" % (
+                    "x" if pgate == "i" else "h"
+                )  # `fc_gate_x` or `fc_gate_h`
                 gate = getattr(cell, gate_name)  # e.g. `cell.fc_gate_x`
-                param_tensor = getattr(lstm, lstm_pth_param_name).clone().detach()  # e.g. `lstm.weight_ih_l0.detach()`
+                param_tensor = (
+                    getattr(lstm, lstm_pth_param_name).clone().detach()
+                )  # e.g. `lstm.weight_ih_l0.detach()`
                 setattr(gate, ptype, nn.Parameter(param_tensor))
 
         return module
 
     def __repr__(self):
-        return "%s(%d, %d, num_layers=%d, dropout=%.2f, bidirectional=%s)" % \
-               (self.__class__.__name__,
-                self.input_size,
-                self.hidden_size,
-                self.num_layers,
-                self.dropout_factor,
-                self.bidirectional)
+        return "%s(%d, %d, num_layers=%d, dropout=%.2f, bidirectional=%s)" % (
+            self.__class__.__name__,
+            self.input_size,
+            self.hidden_size,
+            self.num_layers,
+            self.dropout_factor,
+            self.bidirectional,
+        )
 
 
 def convert_model_to_distiller_lstm(model: nn.Module):

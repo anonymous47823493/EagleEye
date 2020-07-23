@@ -17,10 +17,12 @@ import numpy as np
 import distiller
 from thinning import thinning
 
+
 def random_compression_scheduler(compression_scheduler, channel_configuration):
     for i, item in enumerate(channel_configuration):
         compression_scheduler.policies[1][i].pruner.desired_sparsity = item
     return compression_scheduler
+
 
 def get_pruning_strategy(opt, num_layer):
     channel_config = np.random.rand(num_layer)
@@ -28,19 +30,20 @@ def get_pruning_strategy(opt, num_layer):
     channel_config = channel_config + opt.affine
     return channel_config
 
+
 def main(opt):
     # basic settings
-    os.environ["CUDA_VISIBLE_DEVICES"]=str(opt.gpu_ids)[1:-1]
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(opt.gpu_ids)[1:-1]
 
     if torch.cuda.is_available():
-        device = 'cuda'
+        device = "cuda"
         torch.backends.cudnn.benchmark = True
     else:
-        device = 'cpu'
+        device = "cpu"
     ##################### Get Dataloader ####################
     dataloader_train, dataloader_val = custom_get_dataloaders(opt)
     # dummy_input is sample input of dataloaders
-    if hasattr(dataloader_val, 'dataset'):
+    if hasattr(dataloader_val, "dataset"):
         dummy_input = dataloader_val.dataset.__getitem__(0)
         dummy_input = dummy_input[0]
         dummy_input = dummy_input.unsqueeze(0)
@@ -54,20 +57,23 @@ def main(opt):
     flops_before, params_before = model_summary(net.get_compress_part(), dummy_input)
 
     #####################  Pruning Strategy Generation ###############
-    compression_scheduler = distiller.file_config(net.get_compress_part(), net.optimizer, opt.compress_schedule_path)
+    compression_scheduler = distiller.file_config(
+        net.get_compress_part(), net.optimizer, opt.compress_schedule_path
+    )
     num_layer = len(compression_scheduler.policies[1])
-    
-    channel_config = get_pruning_strategy(opt, num_layer) # pruning strategy
-    
-    compression_scheduler = random_compression_scheduler(compression_scheduler, channel_config)
+
+    channel_config = get_pruning_strategy(opt, num_layer)  # pruning strategy
+
+    compression_scheduler = random_compression_scheduler(
+        compression_scheduler, channel_config
+    )
 
     ###### Adaptive-BN-based Candidate Evaluation of Pruning Strategy ###
     thinning(net, compression_scheduler, input_tensor=dummy_input)
-    print(net)
 
     flops_after, params_after = model_summary(net.get_compress_part(), dummy_input)
     ratio = flops_after / flops_before
-    print('FLOPs ratio:', ratio)
+    print("FLOPs ratio:", ratio)
     if ratio < opt.flops_target - 0.005 or ratio > opt.flops_target + 0.005:
         # illegal pruning strategy
         return
@@ -77,20 +83,21 @@ def main(opt):
     with torch.no_grad():
         for index, sample in enumerate(tqdm(dataloader_train, leave=False)):
             _ = net.get_loss(sample)
-            if index > 50:
+            if index > 100:
                 break
 
-    strategy_score = net.get_eval_scores(dataloader_val)['accuracy']
+    strategy_score = net.get_eval_scores(dataloader_val)["accuracy"]
 
     #################### Save Pruning Strategy and Score #########
-    log_file = open(opt.output_file, 'a+')
+    log_file = open(opt.output_file, "a+")
     log_file.write("{} {} ".format(strategy_score, ratio))
 
     for item in channel_config:
         log_file.write("{} ".format(str(item)))
-    log_file.write('\n')
+    log_file.write("\n")
     log_file.close()
-    print('Eval Score:{}'.format(strategy_score))
+    print("Eval Score:{}".format(strategy_score))
+
 
 if __name__ == "__main__":
     # get options

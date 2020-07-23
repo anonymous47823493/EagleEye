@@ -18,6 +18,7 @@ from .pruner import _ParameterPruner
 import distiller
 import torch
 
+
 class SensitivityPruner(_ParameterPruner):
     """Use algorithm from "Learning both Weights and Connections for Efficient
     Neural Networks" - https://arxiv.org/pdf/1506.02626v3.pdf
@@ -44,18 +45,20 @@ class SensitivityPruner(_ParameterPruner):
         self.sensitivities = sensitivities
 
     def set_param_mask(self, param, param_name, zeros_mask_dict, meta):
-        if not hasattr(param, 'stddev'):
+        if not hasattr(param, "stddev"):
             param.stddev = torch.std(param).item()
 
         if param_name not in self.sensitivities:
-            if '*' not in self.sensitivities:
+            if "*" not in self.sensitivities:
                 return
             else:
-                sensitivity = self.sensitivities['*']
+                sensitivity = self.sensitivities["*"]
         else:
             sensitivity = self.sensitivities[param_name]
 
         threshold = param.stddev * sensitivity
 
         # After computing the threshold, we can create the mask
-        zeros_mask_dict[param_name].mask = distiller.threshold_mask(param.data, threshold)
+        zeros_mask_dict[param_name].mask = distiller.threshold_mask(
+            param.data, threshold
+        )

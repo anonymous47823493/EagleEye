@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+
 def dataset_summary(data_loader):
     """Create a histogram of class membership distribution within a dataset.
 
@@ -25,14 +26,15 @@ def dataset_summary(data_loader):
     for idx, (input, label_batch) in enumerate(data_loader):
         for label in label_batch:
             hist[label] = hist.get(label, 0) + 1
-        if idx%50 == 0:
+        if idx % 50 == 0:
             print("idx: %d" % idx)
-            
+
     nclasses = len(hist)
     from statistics import mean
-    print('Dataset contains {} items'.format(len(data_loader.sampler)))
-    print('Found {} classes'.format(nclasses))
-    for data_class, size in hist.items():
-        print('\tClass {} = {}'.format(data_class, size))
 
-    print('mean: ', mean(list(hist.values())))
+    print("Dataset contains {} items".format(len(data_loader.sampler)))
+    print("Found {} classes".format(nclasses))
+    for data_class, size in hist.items():
+        print("\tClass {} = {}".format(data_class, size))
+
+    print("mean: ", mean(list(hist.values())))

@@ -16,6 +16,7 @@
 
 EPSILON = 1e-8
 
+
 class _Regularizer(object):
     def __init__(self, name, model, reg_regims, threshold_criteria):
         """Regularization base class.

@@ -51,8 +51,10 @@ class TBBackend(object):
            file and this creates a lot of files which slow down the TB load.
         """
         for i, scalar in enumerate(list):
-            if multi_graphs and (i+1 > len(self.writers)):
-                self.writers.append(tf.summary.FileWriter(os.path.join(self.log_dir, str(i))))
+            if multi_graphs and (i + 1 > len(self.writers)):
+                self.writers.append(
+                    tf.summary.FileWriter(os.path.join(self.log_dir, str(i)))
+                )
             summary = tf.Summary(value=[tf.Summary.Value(tag=tag, simple_value=scalar)])
             self.writers[0 if not multi_graphs else i].add_summary(summary, step)
 
@@ -75,7 +77,8 @@ class TBBackend(object):
             max=np.max(tensor),
             num=int(np.prod(tensor.shape)),
             sum=np.sum(tensor),
-            sum_squares=np.sum(np.square(tensor)))
+            sum_squares=np.sum(np.square(tensor)),
+        )
 
         # From the TF documentation:
         #   Parallel arrays encoding the bucket boundaries and the bucket values.

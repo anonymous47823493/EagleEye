@@ -6,24 +6,30 @@ from torchvision.models.resnet import Bottleneck
 from torchvision.models.resnet import BasicBlock
 
 
-__all__ = ['resnet50_earlyexit']
+__all__ = ["resnet50_earlyexit"]
 
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+    )
 
 
 class ResNetEarlyExit(models.ResNet):
-
     def __init__(self, block, layers, num_classes=1000):
         super(ResNetEarlyExit, self).__init__(block, layers, num_classes)
 
         # Define early exit layers
-        self.conv1_exit0 = nn.Conv2d(256, 50, kernel_size=7, stride=2, padding=3, bias=True)
-        self.conv2_exit0 = nn.Conv2d(50, 12, kernel_size=7, stride=2, padding=3, bias=True)
-        self.conv1_exit1 = nn.Conv2d(512, 12, kernel_size=7, stride=2, padding=3, bias=True)
+        self.conv1_exit0 = nn.Conv2d(
+            256, 50, kernel_size=7, stride=2, padding=3, bias=True
+        )
+        self.conv2_exit0 = nn.Conv2d(
+            50, 12, kernel_size=7, stride=2, padding=3, bias=True
+        )
+        self.conv1_exit1 = nn.Conv2d(
+            512, 12, kernel_size=7, stride=2, padding=3, bias=True
+        )
         self.fc_exit0 = nn.Linear(147 * block.expansion, num_classes)
         self.fc_exit1 = nn.Linear(192 * block.expansion, num_classes)
 

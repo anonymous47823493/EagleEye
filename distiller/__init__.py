@@ -44,7 +44,7 @@ def model_find_param_name(model, param_to_find):
     Returns:
         The parameter name (string) or None, if the parameter was not found.
     """
-    for name, param  in model.named_parameters():
+    for name, param in model.named_parameters():
         if param is param_to_find:
             return name
     return None

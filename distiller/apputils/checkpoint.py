@@ -29,11 +29,21 @@ from tabulate import tabulate
 import torch
 import distiller
 from distiller.utils import normalize_module_name
+
 msglogger = logging.getLogger()
 
 
-def save_checkpoint(epoch, arch, model, optimizer=None, scheduler=None,
-                    extras=None, is_best=False, name=None, dir='.'):
+def save_checkpoint(
+    epoch,
+    arch,
+    model,
+    optimizer=None,
+    scheduler=None,
+    extras=None,
+    is_best=False,
+    name=None,
+    dir=".",
+):
     """Save a pytorch training checkpoint
 
     Args:
@@ -49,35 +59,39 @@ def save_checkpoint(epoch, arch, model, optimizer=None, scheduler=None,
         dir: directory in which to save the checkpoint
     """
     if not os.path.isdir(dir):
-        raise IOError(ENOENT, 'Checkpoint directory does not exist at', os.path.abspath(dir))
+        raise IOError(
+            ENOENT, "Checkpoint directory does not exist at", os.path.abspath(dir)
+        )
 
     if extras is None:
         extras = {}
     if not isinstance(extras, dict):
-        raise TypeError('extras must be either a dict or None')
+        raise TypeError("extras must be either a dict or None")
 
-    filename = 'checkpoint.pth.tar' if name is None else name + '_checkpoint.pth.tar'
+    filename = "checkpoint.pth.tar" if name is None else name + "_checkpoint.pth.tar"
     fullpath = os.path.join(dir, filename)
-    model_fullpath = fullpath.replace('.pth.tar', '.pth').replace('checkpoint', 'prunned_model')
+    model_fullpath = fullpath.replace(".pth.tar", ".pth").replace(
+        "checkpoint", "prunned_model"
+    )
     msglogger.info("Saving checkpoint to: %s" % fullpath)
-    filename_best = 'best.pth.tar' if name is None else name + '_best.pth.tar'
+    filename_best = "best.pth.tar" if name is None else name + "_best.pth.tar"
     fullpath_best = os.path.join(dir, filename_best)
 
     checkpoint = {}
-    checkpoint['epoch'] = epoch
-    checkpoint['arch'] = arch
-    checkpoint['state_dict'] = model.state_dict()
+    checkpoint["epoch"] = epoch
+    checkpoint["arch"] = arch
+    checkpoint["state_dict"] = model.state_dict()
     if optimizer is not None:
-        checkpoint['optimizer_state_dict'] = optimizer.state_dict()
-        checkpoint['optimizer_type'] = type(optimizer)
+        checkpoint["optimizer_state_dict"] = optimizer.state_dict()
+        checkpoint["optimizer_type"] = type(optimizer)
     if scheduler is not None:
-        checkpoint['compression_sched'] = scheduler.state_dict()
-    if hasattr(model, 'thinning_recipes'):
-        checkpoint['thinning_recipes'] = model.thinning_recipes
-    if hasattr(model, 'quantizer_metadata'):
-        checkpoint['quantizer_metadata'] = model.quantizer_metadata
+        checkpoint["compression_sched"] = scheduler.state_dict()
+    if hasattr(model, "thinning_recipes"):
+        checkpoint["thinning_recipes"] = model.thinning_recipes
+    if hasattr(model, "quantizer_metadata"):
+        checkpoint["quantizer_metadata"] = model.quantizer_metadata
 
-    checkpoint['extras'] = extras
+    checkpoint["extras"] = extras
 
     torch.save(checkpoint, fullpath)
     torch.save(model, model_fullpath)
@@ -86,8 +100,9 @@ def save_checkpoint(epoch, arch, model, optimizer=None, scheduler=None,
 
 
 def load_lean_checkpoint(model, chkpt_file, model_device=None):
-    return load_checkpoint(model, chkpt_file, model_device=model_device,
-                           lean_checkpoint=True)[0]
+    return load_checkpoint(
+        model, chkpt_file, model_device=model_device, lean_checkpoint=True
+    )[0]
 
 
 def get_contents_table(d):
@@ -103,7 +118,9 @@ def get_contents_table(d):
     return tabulate(contents, headers=["Key", "Type", "Value"], tablefmt="fancy_grid")
 
 
-def load_checkpoint(model, chkpt_file, optimizer=None, model_device=None, *, lean_checkpoint=False):
+def load_checkpoint(
+    model, chkpt_file, optimizer=None, model_device=None, *, lean_checkpoint=False
+):
     """Load a pytorch training checkpoint.
 
     Args:
@@ -116,63 +133,89 @@ def load_checkpoint(model, chkpt_file, optimizer=None, model_device=None, *, lea
     :returns: updated model, compression_scheduler, optimizer, start_epoch
     """
     if not os.path.isfile(chkpt_file):
-        raise IOError(ENOENT, 'Could not find a checkpoint file at', chkpt_file)
+        raise IOError(ENOENT, "Could not find a checkpoint file at", chkpt_file)
 
     msglogger.info("=> loading checkpoint %s", chkpt_file)
     checkpoint = torch.load(chkpt_file, map_location=lambda storage, loc: storage)
 
-    msglogger.info('=> Checkpoint contents:\n{}\n'.format(get_contents_table(checkpoint)))
-    if 'extras' in checkpoint:
-        msglogger.info("=> Checkpoint['extras'] contents:\n{}\n".format(get_contents_table(checkpoint['extras'])))
+    msglogger.info(
+        "=> Checkpoint contents:\n{}\n".format(get_contents_table(checkpoint))
+    )
+    if "extras" in checkpoint:
+        msglogger.info(
+            "=> Checkpoint['extras'] contents:\n{}\n".format(
+                get_contents_table(checkpoint["extras"])
+            )
+        )
 
-    if 'state_dict' not in checkpoint:
-        raise ValueError("Checkpoint must contain the model parameters under the key 'state_dict'")
+    if "state_dict" not in checkpoint:
+        raise ValueError(
+            "Checkpoint must contain the model parameters under the key 'state_dict'"
+        )
 
-    checkpoint_epoch = checkpoint.get('epoch', None)
+    checkpoint_epoch = checkpoint.get("epoch", None)
     start_epoch = checkpoint_epoch + 1 if checkpoint_epoch is not None else 0
 
     compression_scheduler = None
     normalize_dataparallel_keys = False
-    if 'compression_sched' in checkpoint:
+    if "compression_sched" in checkpoint:
         compression_scheduler = distiller.CompressionScheduler(model)
         try:
-            compression_scheduler.load_state_dict(checkpoint['compression_sched'], normalize_dataparallel_keys)
+            compression_scheduler.load_state_dict(
+                checkpoint["compression_sched"], normalize_dataparallel_keys
+            )
         except KeyError as e:
             # A very common source of this KeyError is loading a GPU model on the CPU.
             # We rename all of the DataParallel keys because DataParallel does not execute on the CPU.
             normalize_dataparallel_keys = True
-            compression_scheduler.load_state_dict(checkpoint['compression_sched'], normalize_dataparallel_keys)
-        msglogger.info("Loaded compression schedule from checkpoint (epoch {})".format(
-            checkpoint_epoch))
+            compression_scheduler.load_state_dict(
+                checkpoint["compression_sched"], normalize_dataparallel_keys
+            )
+        msglogger.info(
+            "Loaded compression schedule from checkpoint (epoch {})".format(
+                checkpoint_epoch
+            )
+        )
     else:
-        msglogger.info("Warning: compression schedule data does not exist in the checkpoint")
+        msglogger.info(
+            "Warning: compression schedule data does not exist in the checkpoint"
+        )
 
-    if 'thinning_recipes' in checkpoint:
-        if 'compression_sched' not in checkpoint:
-            raise KeyError("Found thinning_recipes key, but missing mandatory key compression_sched")
+    if "thinning_recipes" in checkpoint:
+        if "compression_sched" not in checkpoint:
+            raise KeyError(
+                "Found thinning_recipes key, but missing mandatory key compression_sched"
+            )
         msglogger.info("Loaded a thinning recipe from the checkpoint")
         # Cache the recipes in case we need them later
-        model.thinning_recipes = checkpoint['thinning_recipes']
+        model.thinning_recipes = checkpoint["thinning_recipes"]
         if normalize_dataparallel_keys:
-            model.thinning_recipes = [distiller.get_normalized_recipe(recipe) for recipe in model.thinning_recipes]
-        distiller.execute_thinning_recipes_list(model,
-                                                compression_scheduler.zeros_mask_dict,
-                                                model.thinning_recipes)
+            model.thinning_recipes = [
+                distiller.get_normalized_recipe(recipe)
+                for recipe in model.thinning_recipes
+            ]
+        distiller.execute_thinning_recipes_list(
+            model, compression_scheduler.zeros_mask_dict, model.thinning_recipes
+        )
 
-    if 'quantizer_metadata' in checkpoint:
-        msglogger.info('Loaded quantizer metadata from the checkpoint')
-        qmd = checkpoint['quantizer_metadata']
-        quantizer = qmd['type'](model, **qmd['params'])
+    if "quantizer_metadata" in checkpoint:
+        msglogger.info("Loaded quantizer metadata from the checkpoint")
+        qmd = checkpoint["quantizer_metadata"]
+        quantizer = qmd["type"](model, **qmd["params"])
         quantizer.prepare_model()
 
     if normalize_dataparallel_keys:
-            checkpoint['state_dict'] = {normalize_module_name(k): v for k, v in checkpoint['state_dict'].items()}
-    model.load_state_dict(checkpoint['state_dict'])
+        checkpoint["state_dict"] = {
+            normalize_module_name(k): v for k, v in checkpoint["state_dict"].items()
+        }
+    model.load_state_dict(checkpoint["state_dict"])
     if model_device is not None:
         model.to(model_device)
 
     if lean_checkpoint:
-        msglogger.info("=> loaded 'state_dict' from checkpoint '{}'".format(str(chkpt_file)))
+        msglogger.info(
+            "=> loaded 'state_dict' from checkpoint '{}'".format(str(chkpt_file))
+        )
         return (model, None, None, 0)
 
     def _load_optimizer(cls, src_state_dict, model):
@@ -184,23 +227,36 @@ def load_checkpoint(model, chkpt_file, optimizer=None, model_device=None, *, lea
         return dest_optimizer
 
     try:
-        optimizer = _load_optimizer(checkpoint['optimizer_type'],
-            checkpoint['optimizer_state_dict'], model)
+        optimizer = _load_optimizer(
+            checkpoint["optimizer_type"], checkpoint["optimizer_state_dict"], model
+        )
     except KeyError:
-        # Older checkpoints do support optimizer loading: They either had an 'optimizer' field 
+        # Older checkpoints do support optimizer loading: They either had an 'optimizer' field
         # (different name) which was not used during the load, or they didn't even checkpoint
-        # the optimizer. 
+        # the optimizer.
         optimizer = None
 
     if optimizer is not None:
-        msglogger.info('Optimizer of type {type} was loaded from checkpoint'.format(
-            type=type(optimizer)))
-        msglogger.info('Optimizer Args: {}'.format(
-            dict((k,v) for k,v in optimizer.state_dict()['param_groups'][0].items()
-                            if k != 'params')))
+        msglogger.info(
+            "Optimizer of type {type} was loaded from checkpoint".format(
+                type=type(optimizer)
+            )
+        )
+        msglogger.info(
+            "Optimizer Args: {}".format(
+                dict(
+                    (k, v)
+                    for k, v in optimizer.state_dict()["param_groups"][0].items()
+                    if k != "params"
+                )
+            )
+        )
     else:
-        msglogger.warning('Optimizer could not be loaded from checkpoint.')
+        msglogger.warning("Optimizer could not be loaded from checkpoint.")
 
-    msglogger.info("=> loaded checkpoint '{f}' (epoch {e})".format(f=str(chkpt_file),
-                                                                   e=checkpoint_epoch))
+    msglogger.info(
+        "=> loaded checkpoint '{f}' (epoch {e})".format(
+            f=str(chkpt_file), e=checkpoint_epoch
+        )
+    )
     return (model, compression_scheduler, optimizer, start_epoch)

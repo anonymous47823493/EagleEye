@@ -18,6 +18,7 @@ import torch
 from .pruner import _ParameterPruner
 import distiller
 
+
 class SparsityLevelParameterPruner(_ParameterPruner):
     """Prune to an exact pruning level specification.
 
@@ -37,7 +38,7 @@ class SparsityLevelParameterPruner(_ParameterPruner):
     def set_param_mask(self, param, param_name, zeros_mask_dict, meta):
         # If there is a specific sparsity level specified for this module, then
         # use it.  Otherwise try to use the default level ('*').
-        desired_sparsity = self.levels.get(param_name, self.levels.get('*', 0))
+        desired_sparsity = self.levels.get(param_name, self.levels.get("*", 0))
         if desired_sparsity == 0:
             return
 
@@ -45,6 +46,15 @@ class SparsityLevelParameterPruner(_ParameterPruner):
 
     @staticmethod
     def prune_level(param, param_name, zeros_mask_dict, desired_sparsity):
-        bottomk, _ = torch.topk(param.abs().view(-1), int(desired_sparsity * param.numel()), largest=False, sorted=True)
-        threshold = bottomk.data[-1] # This is the largest element from the group of elements that we prune away
-        zeros_mask_dict[param_name].mask = distiller.threshold_mask(param.data, threshold)
+        bottomk, _ = torch.topk(
+            param.abs().view(-1),
+            int(desired_sparsity * param.numel()),
+            largest=False,
+            sorted=True,
+        )
+        threshold = bottomk.data[
+            -1
+        ]  # This is the largest element from the group of elements that we prune away
+        zeros_mask_dict[param_name].mask = distiller.threshold_mask(
+            param.data, threshold
+        )

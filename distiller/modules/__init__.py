@@ -18,6 +18,14 @@ from .eltwise import EltwiseAdd, EltwiseMult
 from .grouping import *
 from .rnn import DistillerLSTM, DistillerLSTMCell, convert_model_to_distiller_lstm
 
-__all__ = ['EltwiseAdd', 'EltwiseMult',
-           'Concat', 'Chunk', 'Split', 'Stack',
-           'DistillerLSTMCell', 'DistillerLSTM', 'convert_model_to_distiller_lstm']
+__all__ = [
+    "EltwiseAdd",
+    "EltwiseMult",
+    "Concat",
+    "Chunk",
+    "Split",
+    "Stack",
+    "DistillerLSTMCell",
+    "DistillerLSTM",
+    "convert_model_to_distiller_lstm",
+]

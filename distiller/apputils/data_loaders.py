@@ -28,12 +28,21 @@ import numpy as np
 
 import distiller
 
-DATASETS_NAMES = ['imagenet', 'cifar10']
+DATASETS_NAMES = ["imagenet", "cifar10"]
 
 
-def load_data(dataset, data_dir, batch_size, workers, validation_split=0.1, deterministic=False,
-              effective_train_size=1., effective_valid_size=1., effective_test_size=1.,
-              fixed_subset=False):
+def load_data(
+    dataset,
+    data_dir,
+    batch_size,
+    workers,
+    validation_split=0.1,
+    deterministic=False,
+    effective_train_size=1.0,
+    effective_valid_size=1.0,
+    effective_test_size=1.0,
+    fixed_subset=False,
+):
     """Load a dataset.
 
     Args:
@@ -52,11 +61,21 @@ def load_data(dataset, data_dir, batch_size, workers, validation_split=0.1, dete
     """
     if dataset not in DATASETS_NAMES:
         raise ValueError('load_data does not support dataset %s" % dataset')
-    datasets_fn = cifar10_get_datasets if dataset == 'cifar10' else imagenet_get_datasets
-    return get_data_loaders(datasets_fn, data_dir, batch_size, workers, validation_split=validation_split,
-                            deterministic=deterministic, effective_train_size=effective_train_size,
-                            effective_valid_size=effective_valid_size, effective_test_size=effective_test_size,
-                            fixed_subset=fixed_subset)
+    datasets_fn = (
+        cifar10_get_datasets if dataset == "cifar10" else imagenet_get_datasets
+    )
+    return get_data_loaders(
+        datasets_fn,
+        data_dir,
+        batch_size,
+        workers,
+        validation_split=validation_split,
+        deterministic=deterministic,
+        effective_train_size=effective_train_size,
+        effective_valid_size=effective_valid_size,
+        effective_test_size=effective_test_size,
+        fixed_subset=fixed_subset,
+    )
 
 
 def cifar10_get_datasets(data_dir):
@@ -77,23 +96,26 @@ def cifar10_get_datasets(data_dir):
     [1] C.-Y. Lee, S. Xie, P. Gallagher, Z. Zhang, and Z. Tu. Deeply Supervised Nets.
     arXiv:1409.5185, 2014
     """
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+        ]
+    )
 
-    train_dataset = datasets.CIFAR10(root=data_dir, train=True,
-                                     download=True, transform=train_transform)
+    train_dataset = datasets.CIFAR10(
+        root=data_dir, train=True, download=True, transform=train_transform
+    )
 
-    test_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
+    test_transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+    )
 
-    test_dataset = datasets.CIFAR10(root=data_dir, train=False,
-                                    download=True, transform=test_transform)
+    test_dataset = datasets.CIFAR10(
+        root=data_dir, train=False, download=True, transform=test_transform
+    )
 
     return train_dataset, test_dataset
 
@@ -102,26 +124,31 @@ def imagenet_get_datasets(data_dir):
     """
     Load the ImageNet dataset.
     """
-    train_dir = os.path.join(data_dir, 'train')
-    test_dir = os.path.join(data_dir, 'val')
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+    train_dir = os.path.join(data_dir, "train")
+    test_dir = os.path.join(data_dir, "val")
+    normalize = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )
 
-    train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        normalize,
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ]
+    )
 
     train_dataset = datasets.ImageFolder(train_dir, train_transform)
 
-    test_transform = transforms.Compose([
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        normalize,
-    ])
+    test_transform = transforms.Compose(
+        [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            normalize,
+        ]
+    )
 
     test_dataset = datasets.ImageFolder(test_dir, test_transform)
 
@@ -136,6 +163,7 @@ def __image_size(dataset):
 def __deterministic_worker_init_fn(worker_id, seed=0):
     import random
     import numpy
+
     random.seed(seed)
     numpy.random.seed(seed)
     torch.manual_seed(seed)
@@ -155,6 +183,7 @@ class SwitchingSubsetRandomSampler(Sampler):
         data_source (Dataset): dataset to sample from
         subset_size (float): value in (0..1], representing the portion of dataset to sample at each enumeration.
     """
+
     def __init__(self, data_source, effective_size):
         self.data_source = data_source
         self.subset_length = _get_subset_length(data_source, effective_size)
@@ -163,7 +192,7 @@ class SwitchingSubsetRandomSampler(Sampler):
         # Randomizing in the same way as in torch.utils.data.sampler.SubsetRandomSampler to maintain
         # reproducibility with the previous data loaders implementation
         indices = torch.randperm(len(self.data_source))
-        subset_indices = indices[:self.subset_length]
+        subset_indices = indices[: self.subset_length]
         return (self.data_source[i] for i in subset_indices)
 
     def __len__(self):
@@ -172,7 +201,7 @@ class SwitchingSubsetRandomSampler(Sampler):
 
 def _get_subset_length(data_source, effective_size):
     if effective_size <= 0 or effective_size > 1:
-        raise ValueError('effective_size must be in (0..1]')
+        raise ValueError("effective_size must be in (0..1]")
     return int(np.floor(len(data_source) * effective_size))
 
 
@@ -185,8 +214,18 @@ def _get_sampler(data_source, effective_size, fixed_subset=False):
     return SwitchingSubsetRandomSampler(data_source, effective_size)
 
 
-def get_data_loaders(datasets_fn, data_dir, batch_size, num_workers, validation_split=0.1, deterministic=False,
-                     effective_train_size=1., effective_valid_size=1., effective_test_size=1., fixed_subset=False):
+def get_data_loaders(
+    datasets_fn,
+    data_dir,
+    batch_size,
+    num_workers,
+    validation_split=0.1,
+    deterministic=False,
+    effective_train_size=1.0,
+    effective_valid_size=1.0,
+    effective_test_size=1.0,
+    fixed_subset=False,
+):
     train_dataset, test_dataset = datasets_fn(data_dir)
 
     worker_init_fn = None
@@ -206,24 +245,36 @@ def get_data_loaders(datasets_fn, data_dir, batch_size, num_workers, validation_
     valid_indices, train_indices = __split_list(indices, validation_split)
 
     train_sampler = _get_sampler(train_indices, effective_train_size, fixed_subset)
-    train_loader = torch.utils.data.DataLoader(train_dataset,
-                                               batch_size=batch_size, sampler=train_sampler,
-                                               num_workers=num_workers, pin_memory=True,
-                                               worker_init_fn=worker_init_fn)
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        sampler=train_sampler,
+        num_workers=num_workers,
+        pin_memory=True,
+        worker_init_fn=worker_init_fn,
+    )
 
     valid_loader = None
     if valid_indices:
         valid_sampler = _get_sampler(valid_indices, effective_valid_size, fixed_subset)
-        valid_loader = torch.utils.data.DataLoader(train_dataset,
-                                                   batch_size=batch_size, sampler=valid_sampler,
-                                                   num_workers=num_workers, pin_memory=True,
-                                                   worker_init_fn=worker_init_fn)
+        valid_loader = torch.utils.data.DataLoader(
+            train_dataset,
+            batch_size=batch_size,
+            sampler=valid_sampler,
+            num_workers=num_workers,
+            pin_memory=True,
+            worker_init_fn=worker_init_fn,
+        )
 
     test_indices = list(range(len(test_dataset)))
     test_sampler = _get_sampler(test_indices, effective_test_size, fixed_subset)
-    test_loader = torch.utils.data.DataLoader(test_dataset,
-                                              batch_size=batch_size, sampler=test_sampler,
-                                              num_workers=num_workers, pin_memory=True)
+    test_loader = torch.utils.data.DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        sampler=test_sampler,
+        num_workers=num_workers,
+        pin_memory=True,
+    )
 
     input_shape = __image_size(train_dataset)
 

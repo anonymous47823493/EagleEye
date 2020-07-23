@@ -66,12 +66,12 @@ def perform_sensitivity_analysis(model, net_params, sparsities, test_func, group
     The test_func is expected to execute the model on a test/validation dataset,
     and return the results for top1 and top5 accuracies, and the loss value.
     """
-    if group not in ['element', 'filter', 'channel']:
+    if group not in ["element", "filter", "channel"]:
         raise ValueError("group parameter contains an illegal value: {}".format(group))
     sensitivities = OrderedDict()
 
     for param_name in net_params:
-        if model.state_dict()[param_name].dim() not in [2,4]:
+        if model.state_dict()[param_name].dim() not in [2, 4]:
             continue
 
         # Make a copy of the model, because when we apply the zeros mask (i.e.
@@ -81,29 +81,38 @@ def perform_sensitivity_analysis(model, net_params, sparsities, test_func, group
         sensitivity = OrderedDict()
         for sparsity_level in sparsities:
             sparsity_level = float(sparsity_level)
-            msglogger.info("Testing sensitivity of %s [%0.1f%% sparsity]" % (param_name, sparsity_level*100))
+            msglogger.info(
+                "Testing sensitivity of %s [%0.1f%% sparsity]"
+                % (param_name, sparsity_level * 100)
+            )
             # Create the pruner (a level pruner), the pruning policy and the
             # pruning schedule.
-            if group == 'element':
+            if group == "element":
                 # Element-wise sparasity
                 sparsity_levels = {param_name: sparsity_level}
-                pruner = distiller.pruning.SparsityLevelParameterPruner(name="sensitivity", levels=sparsity_levels)
-            elif group == 'filter':
+                pruner = distiller.pruning.SparsityLevelParameterPruner(
+                    name="sensitivity", levels=sparsity_levels
+                )
+            elif group == "filter":
                 # Filter ranking
                 if model.state_dict()[param_name].dim() != 4:
                     continue
-                pruner = distiller.pruning.L1RankedStructureParameterPruner("sensitivity",
-                                                                            group_type="Filters",
-                                                                            desired_sparsity=sparsity_level,
-                                                                            weights=param_name)
-            elif group == 'channel':
+                pruner = distiller.pruning.L1RankedStructureParameterPruner(
+                    "sensitivity",
+                    group_type="Filters",
+                    desired_sparsity=sparsity_level,
+                    weights=param_name,
+                )
+            elif group == "channel":
                 # Filter ranking
                 if model.state_dict()[param_name].dim() != 4:
                     continue
-                pruner = distiller.pruning.L1RankedStructureParameterPruner("sensitivity",
-                                                                            group_type="Channels",
-                                                                            desired_sparsity=sparsity_level,
-                                                                            weights=param_name)
+                pruner = distiller.pruning.L1RankedStructureParameterPruner(
+                    "sensitivity",
+                    group_type="Channels",
+                    desired_sparsity=sparsity_level,
+                    weights=param_name,
+                )
 
             policy = distiller.PruningPolicy(pruner, pruner_args=None)
             scheduler = CompressionScheduler(model_cpy)
@@ -129,12 +138,15 @@ def sensitivities_to_png(sensitivities, fname):
     try:
         # sudo apt-get install python3-tk
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
-        print("WARNING: Function plot_sensitivity requires package matplotlib which"
-              "is not installed in your execution environment.\n"
-              "Skipping the PNG file generation")
+        print(
+            "WARNING: Function plot_sensitivity requires package matplotlib which"
+            "is not installed in your execution environment.\n"
+            "Skipping the PNG file generation"
+        )
         return
 
     msglogger.info("Generating sensitivity graph")
@@ -144,12 +156,11 @@ def sensitivities_to_png(sensitivities, fname):
         sparsities = [sparsity for sparsity, values in sensitivity.items()]
         plt.plot(sparsities, sense, label=param_name)
 
-    plt.ylabel('top5')
-    plt.xlabel('sparsity')
-    plt.title('Pruning Sensitivity')
-    plt.legend(loc='lower center',
-               ncol=2, mode="expand", borderaxespad=0.)
-    plt.savefig(fname, format='png')
+    plt.ylabel("top5")
+    plt.xlabel("sparsity")
+    plt.title("Pruning Sensitivity")
+    plt.legend(loc="lower center", ncol=2, mode="expand", borderaxespad=0.0)
+    plt.savefig(fname, format="png")
 
 
 def sensitivities_to_csv(sensitivities, fname):
@@ -158,10 +169,10 @@ def sensitivities_to_csv(sensitivities, fname):
     The 'sensitivities' argument is expected to have the dict-of-dict structure
     described in the documentation of perform_sensitivity_test.
     """
-    with open(fname, 'w') as csv_file:
+    with open(fname, "w") as csv_file:
         writer = csv.writer(csv_file)
         # write the header
-        writer.writerow(['parameter', 'sparsity', 'top1', 'top5', 'loss'])
+        writer.writerow(["parameter", "sparsity", "top1", "top5", "loss"])
         for param_name, sensitivity in sensitivities.items():
             for sparsity, values in sensitivity.items():
                 writer.writerow([param_name] + [sparsity] + list(values))

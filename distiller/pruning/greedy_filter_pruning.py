@@ -45,7 +45,7 @@ from distiller.data_loggers import PythonLogger
 from distiller.summary_graph import SummaryGraph
 from distiller import normalize_module_name
 
-__all__ = ['add_greedy_pruner_args', 'greedy_pruner']
+__all__ = ["add_greedy_pruner_args", "greedy_pruner"]
 msglogger = logging.getLogger()
 
 
@@ -57,16 +57,33 @@ def add_greedy_pruner_args(argparser, arch_choices=None, enable_pretrained=False
     Arguments:
         argparser (argparse.ArgumentParser): Existing parser to which to add the arguments
     """
-    argparser.add_argument('--greedy', dest='greedy', action='store_true', help='greedy filter pruning')
-    group = argparser.add_argument_group('Greedy Pruning')
-    group.add_argument('--greedy-ft-epochs', type=int, default=1,
-                       help='number of epochs to fine-tune each discovered network')
-    group.add_argument('--greedy-target-density', type=float,
-                       help='target density of the network we are seeking')
-    group.add_argument('--greedy-pruning-step', type=float, default=0.10,
-                       help='size of each pruning step (as a fraction in [0..1])')
-    group.add_argument('--greedy-finetuning-policy', choices=["constant", "linear-grow"], default="constant",
-                       help='policy used for determining how long to fine-tune')
+    argparser.add_argument(
+        "--greedy", dest="greedy", action="store_true", help="greedy filter pruning"
+    )
+    group = argparser.add_argument_group("Greedy Pruning")
+    group.add_argument(
+        "--greedy-ft-epochs",
+        type=int,
+        default=1,
+        help="number of epochs to fine-tune each discovered network",
+    )
+    group.add_argument(
+        "--greedy-target-density",
+        type=float,
+        help="target density of the network we are seeking",
+    )
+    group.add_argument(
+        "--greedy-pruning-step",
+        type=float,
+        default=0.10,
+        help="size of each pruning step (as a fraction in [0..1])",
+    )
+    group.add_argument(
+        "--greedy-finetuning-policy",
+        choices=["constant", "linear-grow"],
+        default="constant",
+        help="policy used for determining how long to fine-tune",
+    )
 
 
 def prune_tensor(param, param_name, fraction_to_prune, zeros_mask_dict):
@@ -75,18 +92,29 @@ def prune_tensor(param, param_name, fraction_to_prune, zeros_mask_dict):
     Returns the filter-sparsity of the tensor.
     """
     # Create a filter-ranking pruner
-    pruner = distiller.pruning.L1RankedStructureParameterPruner(name=None,
-                                                                group_type="Filters",
-                                                                desired_sparsity=fraction_to_prune,
-                                                                weights=param_name, group_dependency=isinstance(param_name, list))
+    pruner = distiller.pruning.L1RankedStructureParameterPruner(
+        name=None,
+        group_type="Filters",
+        desired_sparsity=fraction_to_prune,
+        weights=param_name,
+        group_dependency=isinstance(param_name, list),
+    )
     pruner.set_param_mask(param, param_name, zeros_mask_dict, meta=None)
     # Use the mask to prune
     zeros_mask_dict[param_name].apply_mask(param)
     return distiller.sparsity_3D(param)
 
 
-def prune_finetune_test(iteration, model_cpy, pruning_step, test_fn, train_fn,
-                        app_args, param_name, effective_train_size):
+def prune_finetune_test(
+    iteration,
+    model_cpy,
+    pruning_step,
+    test_fn,
+    train_fn,
+    app_args,
+    param_name,
+    effective_train_size,
+):
     pylogger = PythonLogger(msglogger)
     zeros_mask_dict = distiller.create_model_masks_dict(model_cpy)
     param = model_cpy.state_dict()[param_name]
@@ -95,11 +123,20 @@ def prune_finetune_test(iteration, model_cpy, pruning_step, test_fn, train_fn,
 
     if train_fn is not None:
         # Fine-tune
-        optimizer = torch.optim.SGD(model_cpy.parameters(), lr=app_args.lr,
-                                    momentum=app_args.momentum, weight_decay=app_args.weight_decay)
+        optimizer = torch.optim.SGD(
+            model_cpy.parameters(),
+            lr=app_args.lr,
+            momentum=app_args.momentum,
+            weight_decay=app_args.weight_decay,
+        )
         app_args.effective_train_size = effective_train_size
-        train_fn(model=model_cpy, compression_scheduler=create_scheduler(model_cpy, zeros_mask_dict),
-                 optimizer=optimizer, epoch=iteration, loggers=[pylogger])
+        train_fn(
+            model=model_cpy,
+            compression_scheduler=create_scheduler(model_cpy, zeros_mask_dict),
+            optimizer=optimizer,
+            epoch=iteration,
+            loggers=[pylogger],
+        )
 
     # Physically remove filters
     dataset = app_args.dataset
@@ -111,8 +148,16 @@ def prune_finetune_test(iteration, model_cpy, pruning_step, test_fn, train_fn,
     return (prec1, prec5, loss, zeros_mask_dict)
 
 
-def find_most_robust_layer(iteration, model, pruning_step, test_fn, train_fn,
-                           app_args, tensors_to_prune=None, effective_train_size=1):
+def find_most_robust_layer(
+    iteration,
+    model,
+    pruning_step,
+    test_fn,
+    train_fn,
+    app_args,
+    tensors_to_prune=None,
+    effective_train_size=1,
+):
     """Find the layer that is most robust to pruning 'pruning_step' filters.
 
     For each layer: prune 'step' percent of the filters, fine-tune, and measure top1 accuracy
@@ -122,15 +167,22 @@ def find_most_robust_layer(iteration, model, pruning_step, test_fn, train_fn,
     # best_layer format: (prec1, prec5, param_name, pruned_model, zeros_mask_dict)
     best_layer = (-np.inf, -np.inf, None, None, None, np.inf)
     for param_name in tensors_to_prune:
-        logging.info('pruning tensor %s' % param_name)
+        logging.info("pruning tensor %s" % param_name)
         if isinstance(param_name, str) and model.state_dict()[param_name].dim() != 4:
             continue
         # Make a copy of the model, because when we prune the parameter tensor the model's weights are altered
         torch.cuda.empty_cache()
         model_cpy = deepcopy(model)
-        (prec1, prec5, loss, zeros_mask_dict) = prune_finetune_test(iteration, model_cpy, pruning_step, test_fn,
-                                                                    train_fn, app_args, param_name,
-                                                                    effective_train_size)
+        (prec1, prec5, loss, zeros_mask_dict) = prune_finetune_test(
+            iteration,
+            model_cpy,
+            pruning_step,
+            test_fn,
+            train_fn,
+            app_args,
+            param_name,
+            effective_train_size,
+        )
         if (prec1, prec5, -loss) > (best_layer[0], best_layer[1], -best_layer[-1]):
             best_layer = (prec1, prec5, param_name, model_cpy, zeros_mask_dict, loss)
         del model_cpy
@@ -138,8 +190,16 @@ def find_most_robust_layer(iteration, model, pruning_step, test_fn, train_fn,
     return best_layer[:-1]
 
 
-def find_most_robust_layer_mp(iteration, model, pruning_step, test_fn, train_fn,
-                              app_args, tensors_to_prune=None, effective_train_size=1):
+def find_most_robust_layer_mp(
+    iteration,
+    model,
+    pruning_step,
+    test_fn,
+    train_fn,
+    app_args,
+    tensors_to_prune=None,
+    effective_train_size=1,
+):
     """Multiprocessing version of find_most_robust_layer
     """
     if tensors_to_prune is None:
@@ -154,12 +214,30 @@ def find_most_robust_layer_mp(iteration, model, pruning_step, test_fn, train_fn,
         # Make a copy of the model, because when we prune the parameter tensor the model's weights are altered
         model_cpy = deepcopy(model)
         model_cpy.share_memory()
-        (prec1, prec5, loss, zeros_mask_dict) = prune_finetune_test(iteration, model_cpy, pruning_step,
-                                                                    test_fn, train_fn, app_args,
-                                                                    param_name, effective_train_size)
+        (prec1, prec5, loss, zeros_mask_dict) = prune_finetune_test(
+            iteration,
+            model_cpy,
+            pruning_step,
+            test_fn,
+            train_fn,
+            app_args,
+            param_name,
+            effective_train_size,
+        )
         param = model_cpy.state_dict()[param_name]
-        p = mp.Process(target=prune_finetune_test, args=(pqueue, model_cpy, pruning_step, test_fn,
-                                                         train_fn, app_args, param_name, param))
+        p = mp.Process(
+            target=prune_finetune_test,
+            args=(
+                pqueue,
+                model_cpy,
+                pruning_step,
+                test_fn,
+                train_fn,
+                app_args,
+                param_name,
+                param,
+            ),
+        )
         processes.append(p)
         p.start()
 
@@ -182,7 +260,7 @@ def get_model_compute_budget(model, dataset, layers_to_prune=None):
             # Use the SummaryGraph to obtain some other details of the models
             conv_op = g.find_op(normalize_module_name(name))
             assert conv_op is not None
-            total_macs += conv_op['attrs']['MACs']
+            total_macs += conv_op["attrs"]["MACs"]
     del g
     return total_macs
 
@@ -204,21 +282,28 @@ def get_param_densities(model, compressed_model, tensors_to_prune):
 def create_scheduler(model, zeros_mask_dict):
     scheduler = distiller.CompressionScheduler(model)
     masks = {param_name: masker.mask for param_name, masker in zeros_mask_dict.items()}
-    scheduler.load_state_dict(state={'masks_dict': masks})
+    scheduler.load_state_dict(state={"masks_dict": masks})
     return scheduler
 
 
 def create_network_record_file():
     """Create the CSV file and write the column names"""
-    fields = ['iteration', 'top1', 'param_name', 'normalized_macs', 'total_macs', 'densities']
-    with open(os.path.join(msglogger.logdir, 'greedy.csv'), 'w') as f:
+    fields = [
+        "iteration",
+        "top1",
+        "param_name",
+        "normalized_macs",
+        "total_macs",
+        "densities",
+    ]
+    with open(os.path.join(msglogger.logdir, "greedy.csv"), "w") as f:
         writer = csv.writer(f)
         writer.writerow(fields)
 
 
 def record_network_details(fields):
     """Write the details of one network to a CSV file and create a checkpoint file"""
-    with open(os.path.join(msglogger.logdir, 'greedy.csv'), 'a') as f:
+    with open(os.path.join(msglogger.logdir, "greedy.csv"), "a") as f:
         writer = csv.writer(f)
         writer.writerow(fields)
 
@@ -240,32 +325,82 @@ def record_network_details(fields):
 #                    "module.layer4.0.conv1.weight", "module.layer4.0.conv2.weight",
 #                    "module.layer4.1.conv1.weight", "module.layer4.1.conv2.weight",
 #                    "module.layer4.2.conv1.weight", "module.layer4.2.conv2.weight"]
-resnet50_params = [["module.layer4.0.conv3.weight", "module.layer4.1.conv3.weight", "module.layer4.2.conv3.weight", "module.layer4.0.shortcut,0.weight"]]
+resnet50_params = [
+    [
+        "module.layer4.0.conv3.weight",
+        "module.layer4.1.conv3.weight",
+        "module.layer4.2.conv3.weight",
+        "module.layer4.0.shortcut,0.weight",
+    ]
+]
 
-resnet20_params = ["module.layer1.0.conv1.weight", "module.layer1.1.conv1.weight", "module.layer1.2.conv1.weight",
-                   "module.layer2.0.conv1.weight", "module.layer2.1.conv1.weight", "module.layer2.2.conv1.weight",
-                   "module.layer3.0.conv1.weight", "module.layer3.1.conv1.weight", "module.layer3.2.conv1.weight"]
+resnet20_params = [
+    "module.layer1.0.conv1.weight",
+    "module.layer1.1.conv1.weight",
+    "module.layer1.2.conv1.weight",
+    "module.layer2.0.conv1.weight",
+    "module.layer2.1.conv1.weight",
+    "module.layer2.2.conv1.weight",
+    "module.layer3.0.conv1.weight",
+    "module.layer3.1.conv1.weight",
+    "module.layer3.2.conv1.weight",
+]
 
-resnet56_params = ["module.layer1.0.conv1.weight", "module.layer1.1.conv1.weight", "module.layer1.2.conv1.weight",
-                   "module.layer1.3.conv1.weight", "module.layer1.4.conv1.weight", "module.layer1.5.conv1.weight",
-                   "module.layer1.6.conv1.weight", "module.layer1.7.conv1.weight", "module.layer1.8.conv1.weight",
+resnet56_params = [
+    "module.layer1.0.conv1.weight",
+    "module.layer1.1.conv1.weight",
+    "module.layer1.2.conv1.weight",
+    "module.layer1.3.conv1.weight",
+    "module.layer1.4.conv1.weight",
+    "module.layer1.5.conv1.weight",
+    "module.layer1.6.conv1.weight",
+    "module.layer1.7.conv1.weight",
+    "module.layer1.8.conv1.weight",
+    "module.layer2.0.conv1.weight",
+    "module.layer2.1.conv1.weight",
+    "module.layer2.2.conv1.weight",
+    "module.layer2.3.conv1.weight",
+    "module.layer2.4.conv1.weight",
+    "module.layer2.5.conv1.weight",
+    "module.layer2.6.conv1.weight",
+    "module.layer2.7.conv1.weight",
+    "module.layer2.8.conv1.weight",
+    "module.layer3.0.conv1.weight",
+    "module.layer3.1.conv1.weight",
+    "module.layer3.2.conv1.weight",
+    "module.layer3.3.conv1.weight",
+    "module.layer3.4.conv1.weight",
+    "module.layer3.5.conv1.weight",
+    "module.layer3.6.conv1.weight",
+    "module.layer3.7.conv1.weight",
+    "module.layer3.8.conv1.weight",
+]
 
-                   "module.layer2.0.conv1.weight", "module.layer2.1.conv1.weight", "module.layer2.2.conv1.weight",
-                   "module.layer2.3.conv1.weight", "module.layer2.4.conv1.weight", "module.layer2.5.conv1.weight",
-                   "module.layer2.6.conv1.weight", "module.layer2.7.conv1.weight", "module.layer2.8.conv1.weight",
-
-                   "module.layer3.0.conv1.weight", "module.layer3.1.conv1.weight", "module.layer3.2.conv1.weight",
-                   "module.layer3.3.conv1.weight", "module.layer3.4.conv1.weight", "module.layer3.5.conv1.weight",
-                   "module.layer3.6.conv1.weight", "module.layer3.7.conv1.weight", "module.layer3.8.conv1.weight"]
-
-mobilenetv1_params = ["module.layers.0.conv2.weight", "module.layers.1.conv2.weight", "module.layers.2.conv2.weight",
-                      "module.layers.3.conv2.weight", "module.layers.4.conv2.weight", "module.layers.5.conv2.weight",
-                      "module.layers.6.conv2.weight", "module.layers.7.conv2.weight", "module.layers.8.conv2.weight",
-
-                      "module.layers.9.conv2.weight", "module.layers.10.conv2.weight", "module.layers.11.conv2.weight",
-                      "module.layers.12.conv2.weight"]
+mobilenetv1_params = [
+    "module.layers.0.conv2.weight",
+    "module.layers.1.conv2.weight",
+    "module.layers.2.conv2.weight",
+    "module.layers.3.conv2.weight",
+    "module.layers.4.conv2.weight",
+    "module.layers.5.conv2.weight",
+    "module.layers.6.conv2.weight",
+    "module.layers.7.conv2.weight",
+    "module.layers.8.conv2.weight",
+    "module.layers.9.conv2.weight",
+    "module.layers.10.conv2.weight",
+    "module.layers.11.conv2.weight",
+    "module.layers.12.conv2.weight",
+]
 # mobilenetv1_params = ['module.layers.0.conv2.weight']
-def greedy_pruner(pruned_model, app_args, fraction_to_prune, pruning_step, test_fn, train_fn, writer=None):
+def greedy_pruner(
+    pruned_model,
+    app_args,
+    fraction_to_prune,
+    pruning_step,
+    test_fn,
+    train_fn,
+    writer=None,
+):
     dataset = app_args.dataset
     arch = app_args.arch
     # create_network_record_file()
@@ -282,11 +417,16 @@ def greedy_pruner(pruned_model, app_args, fraction_to_prune, pruning_step, test_
     elif arch == "mobilenetv1":
         resnet_params = mobilenetv1_params
     if resnet_params is not None:
-        resnet_layers = [param[:-len(".weight")] for param in resnet_params]
-    logging.info('resnet params %s' % resnet_layers)
-    total_macs = dense_total_macs = get_model_compute_budget(pruned_model, dataset, resnet_layers)
-    logging.info('total_macs %f' % total_macs)
-    logging.info('fraction_to_prune * dense_total_macs = %f' % (fraction_to_prune * dense_total_macs))
+        resnet_layers = [param[: -len(".weight")] for param in resnet_params]
+    logging.info("resnet params %s" % resnet_layers)
+    total_macs = dense_total_macs = get_model_compute_budget(
+        pruned_model, dataset, resnet_layers
+    )
+    logging.info("total_macs %f" % total_macs)
+    logging.info(
+        "fraction_to_prune * dense_total_macs = %f"
+        % (fraction_to_prune * dense_total_macs)
+    )
     iteration = 0
     model = pruned_model
 
@@ -297,34 +437,63 @@ def greedy_pruner(pruned_model, app_args, fraction_to_prune, pruning_step, test_
         elif app_args.greedy_finetuning_policy == "linear-grow":
             effective_train_size = 1 - (total_macs / dense_total_macs)
 
-        prec1, prec5, param_name, pruned_model, zeros_mask_dict = find_most_robust_layer(iteration, pruned_model,
-                                                                                         pruning_step,
-                                                                                         test_fn, train_fn,
-                                                                                         app_args, resnet_params,
-                                                                                         effective_train_size)
+        (
+            prec1,
+            prec5,
+            param_name,
+            pruned_model,
+            zeros_mask_dict,
+        ) = find_most_robust_layer(
+            iteration,
+            pruned_model,
+            pruning_step,
+            test_fn,
+            train_fn,
+            app_args,
+            resnet_params,
+            effective_train_size,
+        )
         total_macs = get_model_compute_budget(pruned_model, dataset, resnet_layers)
         densities = get_param_densities(model, pruned_model, resnet_params)
         if writer is not None:
-            logging.info('info writer to tensorboard')
-            writer.add_scalar('macs', total_macs, iteration)
-            writer.add_scalar('acc', prec1, iteration)
-            writer.add_scalar('acc/macs', prec1, total_macs)
-        compute_density = total_macs/dense_total_macs
+            logging.info("info writer to tensorboard")
+            writer.add_scalar("macs", total_macs, iteration)
+            writer.add_scalar("acc", prec1, iteration)
+            writer.add_scalar("acc/macs", prec1, total_macs)
+        compute_density = total_macs / dense_total_macs
         results = (iteration, prec1, param_name, compute_density, total_macs, densities)
         record_network_details(results)
         scheduler = create_scheduler(pruned_model, zeros_mask_dict)
-        save_checkpoint(0, arch, pruned_model, optimizer=None, scheduler=scheduler, extras={'top1': prec1},
-                        name="greedy__{}__{:.1f}__{:.1f}".format(str(iteration).zfill(3), compute_density*100, prec1),
-                        dir=msglogger.logdir)
+        save_checkpoint(
+            0,
+            arch,
+            pruned_model,
+            optimizer=None,
+            scheduler=scheduler,
+            extras={"top1": prec1},
+            name="greedy__{}__{:.1f}__{:.1f}".format(
+                str(iteration).zfill(3), compute_density * 100, prec1
+            ),
+            dir=msglogger.logdir,
+        )
         del scheduler
         # del zeros_mask_dict
-        msglogger.info("Iteration {}: top1-{:.2f} {} compute-{:.2f}".format(*results[0:4]))
+        msglogger.info(
+            "Iteration {}: top1-{:.2f} {} compute-{:.2f}".format(*results[0:4])
+        )
 
     assert iteration > 0
     prec1, prec5, loss = test_fn(model=pruned_model)
-    logging.info('final result: %f %f %f' % (prec1, prec5, loss))
+    logging.info("final result: %f %f %f" % (prec1, prec5, loss))
     scheduler = create_scheduler(pruned_model, zeros_mask_dict)
-    save_checkpoint(0, arch, pruned_model, optimizer=None, scheduler=scheduler, extras={'top1': prec1},
-                    name='_'.join(("greedy", str(fraction_to_prune))),
-                    dir=msglogger.logdir)
+    save_checkpoint(
+        0,
+        arch,
+        pruned_model,
+        optimizer=None,
+        scheduler=scheduler,
+        extras={"top1": prec1},
+        name="_".join(("greedy", str(fraction_to_prune))),
+        dir=msglogger.logdir,
+    )
     return pruned_model
