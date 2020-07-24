@@ -29,9 +29,11 @@ If you use EagleEye in your research, please consider citing:
 ## Code Release Schedule
 
 - [x] Inference Code
-- [ ] Pruning Strategy Generation
-- [ ] Adaptive-BN-based Candidate Evaluation of Pruning Strategy
-- [ ] Finetuning of Pruned Model
+- [x] Pruning Strategy Generation
+- [x] Adaptive-BN-based Candidate Evaluation of Pruning Strategy
+- [x] Finetuning of Pruned Model
+- [ ] Documentation
+- [ ] Reproduction Guidance
 
 ## Adaptive-BN-based Candidate Evaluation
 
