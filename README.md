@@ -46,7 +46,7 @@ def eval_pruning_strategy(model, pruning_strategy, dataloader_train):
 
    # Adaptive-BN
    pruned_model.train()
-   max_iter = 50
+   max_iter = 100
    with torch.no_grad():
       for iter_in_epoch, sample in enumerate(dataloader_train):
             pruned_model.forward(sample)
