@@ -76,80 +76,44 @@ def eval_pruning_strategy(model, pruning_strategy, dataloader_train):
 
 ## Usage
 
-```shell
-usage: main.py [-h] [--model_name MODEL_NAME] [--num_classes NUM_CLASSES]
-               [--checkpoint CHECKPOINT] [--gpu_ids GPU_IDS [GPU_IDS ...]]
-               [--batch_size BATCH_SIZE] [--dataset_path DATASET_PATH]
-               [--dataset_name DATASET_NAME] [--num_workers NUM_WORKERS]
-               [--lr LR] [--weight_decay WEIGHT_DECAY] [--momentum MOMENTUM]
-               [--max_rate MAX_RATE] [--affine AFFINE]
-               [--compress_schedule_path COMPRESS_SCHEDULE_PATH]
-               [--flops_target FLOPS_TARGET] [--output_file OUTPUT_FILE]
+Our proposed EagleEye contains 3 steps:
 
-optional arguments:
-  -h, --help            show this help message and exit
-  --model_name MODEL_NAME
-                        what kind of model you are using. Only support
-                        `resnet50`, `mobilenetv1` and `mobilenetv1_imagenet`
-  --num_classes NUM_CLASSES
-                        num of class label
-  --checkpoint CHECKPOINT
-                        path to model state dict
-  --gpu_ids GPU_IDS [GPU_IDS ...]
-                        GPU ids.
-  --batch_size BATCH_SIZE
-                        batch size while fine-tuning
-  --dataset_path DATASET_PATH
-                        path to dataset
-  --dataset_name DATASET_NAME
-                        filename of the file contains your own
-                        `get_dataloaders` function
-  --num_workers NUM_WORKERS
-                        Number of workers used in dataloading
-  --lr LR               learning rate while fine-tuning
-  --weight_decay WEIGHT_DECAY
-                        weight decay while fine-tuning
-  --momentum MOMENTUM   momentum while fine-tuning
-  --max_rate MAX_RATE   define search space
-  --affine AFFINE       define search space
-  --compress_schedule_path COMPRESS_SCHEDULE_PATH
-                        path to compression schedule
-  --flops_target FLOPS_TARGET
-                        flops constraints for pruning
-  --output_file OUTPUT_FILE
-                        path to compression schedule
-```
+1. Adaptive-BN-based Searching for Pruning Strategy
+2. Candidate Selection
+3. Finetuning of Pruned Model
 
 ### 1. Adaptive-BN-based Searching for Pruning Strategy
 
-```shell
-python3 search.py \
---model_name mobilenetv1 \
---num_classes 1000 \
---checkpoint models/ckpt/imagenet_mobilenet_726.pth \
---gpu_ids 5 \
---batch_size 128 \
---dataset_path /data/imagenet \
---dataset_name imagenet_train_val_split \
---num_workers 4 \
---flops_target 0.5 \
---max_rate 0.7 \
---affine 0 \
---flops_target 0.5 \
---output_file log.txt \
---compress_schedule_path {compress_config/mbv1_imagenet.yaml|/compress_config/res50_imagenet.yaml}
+On this step, pruning strategies are randomly generated. Then, Adaptive-BN-based evaluation are performed among these pruning strategies. Pruning strategies and their eval scores will be saved to `log.txt`.
 
-```
+Hyper Parameters involved in this steps:
+
+|Name|Description|
+|----|-----------|
+|`--flops_target`|The remaining FLOPs of pruned model|
+|`--max_rate`<br>`--affine`|Define the search space. The search space is [affine, max_rate]|
+|`--output_file`|File stores the searching results.|
+
+Sample scripts could refer to `1. Search` of `scripts/mbv1_50flops.sh`.
 
 ### 2. Candidate Selection
 
+On this step, best pruning strategy is picked from `output_file` generated on step1.
+
+The output looks like as following:
 ```
-python choose_strategy.py log.txt
+########## mbv1.txt ##########
+strategy index:84, score:0.143
+strategy index:985, score:0.123
 ```
+
+Sample scripts could refer to `2. Selection` of `scripts/mbv1_50flops.sh`.
 
 ### 3. Finetuning of Pruned Model
 
-Coming soon...
+This step take strategy index as input and perform finetuning on it.
+
+Sample scripts could refer to `3. Finetuning` of `scripts/mbv1_50flops.sh`.
 
 ### 4. Inference of Pruned Model
 
