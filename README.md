@@ -86,7 +86,7 @@ Our proposed EagleEye contains 3 steps:
 
 On this step, pruning strategies are randomly generated. Then, Adaptive-BN-based evaluation are performed among these pruning strategies. Pruning strategies and their eval scores will be saved to `log.txt`.
 
-Hyper Parameters involved in this steps:
+Parameters involved in this steps:
 
 |Name|Description|
 |----|-----------|
@@ -113,7 +113,19 @@ Sample scripts could refer to `2. Selection` of `scripts/mbv1_50flops.sh`.
 
 This step take strategy index as input and perform finetuning on it.
 
+Parameters involved in this steps:
+
+|Name|Description|
+|----|-----------|
+|`--search_result`|Searching results|
+|`--strategy_id`|Index of best pruning strategy from step2|
+|`--lr`|Learning rate for finetuning|
+|`--weight_decay`|Weight decay while fine-tuning|
+|`--epoch`|Number of finetuning epoch|
+
 Sample scripts could refer to `3. Finetuning` of `scripts/mbv1_50flops.sh`.
+
+
 
 ### 4. Inference of Pruned Model
 
