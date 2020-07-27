@@ -66,7 +66,7 @@ def eval_pruning_strategy(model, pruning_strategy, dataloader_train):
 
 2. **Download Pretrained Models**
 
-   We provide reported pruned models in [Dropbox](<https://www.dropbox.com/sh/im1janxv5p8u5jm/AAA7s6danrqdL42UvteICARra?dl=0>). Please put the downloaded models in the dir of `models/ckpt/`.
+   We provide pretrained baseline models and reported pruned models in [Dropbox](<https://www.dropbox.com/sh/im1janxv5p8u5jm/AAA7s6danrqdL42UvteICARra?dl=0>). Please put the downloaded models in the dir of `models/ckpt/`.
 
 3. **Prepare Runtime Environment**
 
@@ -127,12 +127,12 @@ Sample scripts could refer to `3. Finetuning` of `scripts/mbv1_50flops.sh`.
 
 
 
-### 4. Inference of Pruned Model
+## Inference of Pruned Model
 
 **For ResNet50:**
 
 ```shell
-python3 main.py \
+python3 inference.py \
 --model_name resnet50 \
 --num_classes 1000 \
 --checkpoint models/ckpt/{resnet50_25flops.pth|resnet50_50flops.pth|resnet50_72flops.pth} \
