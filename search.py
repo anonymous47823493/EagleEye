@@ -27,7 +27,7 @@ def random_compression_scheduler(compression_scheduler, channel_configuration):
 def get_pruning_strategy(opt, num_layer):
     channel_config = np.random.rand(num_layer)
     channel_config = channel_config * opt.max_rate
-    channel_config = channel_config + opt.affine
+    channel_config = channel_config + opt.min_rate
     return channel_config
 
 

@@ -91,7 +91,7 @@ Parameters involved in this steps:
 |Name|Description|
 |----|-----------|
 |`--flops_target`|The remaining FLOPs of pruned model|
-|`--max_rate`<br>`--affine`|Define the search space. The search space is [affine, max_rate]|
+|`--max_rate`<br>`--min_rate`|Define the search space. The search space is [min_rate, max_rate]|
 |`--output_file`|File stores the searching results.|
 
 Sample scripts could refer to `1. Search` of `scripts/mbv1_50flops.sh`.
