@@ -88,7 +88,7 @@ class BaseOptions:
             "--max_rate", type=float, default=0.7, help="define search space"
         )
         self.parser.add_argument(
-            "--affine", type=float, default=0, help="define search space"
+            "--min_rate", type=float, default=0, help="define search space"
         )
         self.parser.add_argument(
             "--compress_schedule_path",
