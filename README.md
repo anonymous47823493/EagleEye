@@ -96,6 +96,8 @@ Parameters involved in this steps:
 
 Sample scripts could refer to `1. Search` of `scripts/mbv1_50flops.sh`.
 
+If you do not want to perform searching by yourself, the provided search result could be found in `search_result/`.
+
 ### 2. Candidate Selection
 
 On this step, best pruning strategy is picked from `output_file` generated on step1.
