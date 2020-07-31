@@ -57,6 +57,10 @@ def eval_pruning_strategy(model, pruning_strategy, dataloader_train):
    return acc
 ```
 
+## Baseline Model Training
+
+The code used for training baseline models(MobileNetV1, ResNet50) will be released at [CNNResearchToolkit](https://github.com/Bowenwu1/CNNResearchToolkit). Welcome everyone to follow!
+
 ## Setup
 
 1. **Prepare Data**
