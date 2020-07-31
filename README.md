@@ -32,8 +32,7 @@ If you use EagleEye in your research, please consider citing:
 - [x] Pruning Strategy Generation
 - [x] Adaptive-BN-based Candidate Evaluation of Pruning Strategy
 - [x] Finetuning of Pruned Model
-- [ ] Documentation
-- [ ] Reproduction Guidance
+- [x] Documentation
 
 ## Adaptive-BN-based Candidate Evaluation
 
@@ -97,6 +96,14 @@ Parameters involved in this steps:
 Sample scripts could refer to `1. Search` of `scripts/mbv1_50flops.sh`.
 
 If you do not want to perform searching by yourself, the provided search result could be found in `search_result/`.
+
+**Searching space for different models**
+|Model|Pruned FLOPs|[min_rate, max_rate]|
+|-----|-----|--------------------|
+|MobileNetV1|-50%|[0, 0,7]|
+|ResNet50|-25%|[0, 0.4]|
+|ResNet50|-50%|[0, 0.7]|
+|ResNet50|-75%|[0, 0.8]|
 
 ### 2. Candidate Selection
 
