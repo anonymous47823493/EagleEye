@@ -69,7 +69,10 @@ def main(opt):
     )
 
     ###### Adaptive-BN-based Candidate Evaluation of Pruning Strategy ###
-    thinning(net, compression_scheduler, input_tensor=dummy_input)
+    try:
+        thinning(net, compression_scheduler, input_tensor=dummy_input)
+    except:
+        return
 
     flops_after, params_after = model_summary(net.get_compress_part(), dummy_input)
     ratio = flops_after / flops_before
@@ -103,7 +106,4 @@ if __name__ == "__main__":
     # get options
     opt = BaseOptions().parse()
     while True:
-        try:
-            main(opt)
-        except:
-            pass
+        main(opt)
