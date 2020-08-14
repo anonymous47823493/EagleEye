@@ -103,4 +103,7 @@ if __name__ == "__main__":
     # get options
     opt = BaseOptions().parse()
     while True:
-        main(opt)
+        try:
+            main(opt)
+        except:
+            pass
