@@ -72,6 +72,7 @@ def main(opt):
     try:
         thinning(net, compression_scheduler, input_tensor=dummy_input)
     except:
+        print('[WARNING] This pruning strategy is invalid for distiller thinning module, pass it.')
         return
 
     flops_after, params_after = model_summary(net.get_compress_part(), dummy_input)
