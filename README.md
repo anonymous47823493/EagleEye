@@ -69,7 +69,7 @@ The code used for training baseline models(MobileNetV1, ResNet50) will be releas
 
 2. **Download Pretrained Models**
 
-   We provide pretrained baseline models and reported pruned models in [Dropbox](<https://www.dropbox.com/sh/im1janxv5p8u5jm/AAA7s6danrqdL42UvteICARra?dl=0>). Please put the downloaded models in the dir of `models/ckpt/`.
+   We provide pretrained baseline models and reported pruned models in [Dropbox](<https://www.dropbox.com/sh/im1janxv5p8u5jm/AAA7s6danrqdL42UvteICARra?dl=0>) or [Google Drive](<https://drive.google.com/drive/folders/1ENq4RuFey3J2iL-Lu1BZ9ToTYILpV9bC>). Please put the downloaded models in the dir of `models/ckpt/`.
 
 3. **Prepare Runtime Environment**
 
