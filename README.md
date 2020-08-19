@@ -9,6 +9,8 @@ PyTorch implementation for *[EagleEye: Fast Sub-net Evaluation for Efficient Neu
 
 Presented at [ECCV 2020 (Oral)](https://eccv2020.eu/accepted-papers/)
 
+Check [slides](https://dmmo.dm-ai.cn/eagle_eye/dmai_eagleeye_jiqizhixin202008.pdf) about EagleEye: “High-performance AI on the Edge: from perspectives of model compression and hardware architecture design“, DMAI HiPerAIR, Aug. 2020.
+
 ![pipeline](fig/eye.png)
 
 ## Citation
