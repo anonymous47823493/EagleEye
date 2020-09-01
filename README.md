@@ -154,7 +154,7 @@ python3 inference.py \
 **For MobileNetV1:**
 
 ```shell
-python3 main.py \
+python3 inference.py \
 --model_name mobilenetv1 \
 --num_classes 1000 \
 --checkpoint models/ckpt/mobilenetv1_50flops.pth \
