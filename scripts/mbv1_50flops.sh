@@ -2,7 +2,7 @@
 python3 search.py \
 --model_name mobilenetv1 \
 --num_classes 1000 \
---checkpoint models/ckpt/imagenet_resnet50_full_model.pth \
+--checkpoint models/ckpt/imagenet_mobilenet_full_model.pth \
 --gpu_ids 0 \
 --batch_size 128 \
 --dataset_path /data/imagenet \
@@ -21,7 +21,7 @@ python choose_strategy.py search_results/pruning_strategies.txt
 python3 finetune.py \
 --model_name mobilenetv1 \
 --num_classes 1000 \
---checkpoint models/ckpt/imagenet_resnet50_full_model.pth \
+--checkpoint models/ckpt/imagenet_mobilenet_full_model.pth \
 --gpu_ids [GPU_IDS] \
 --batch_size 512 \
 --dataset_path /data/imagenet \
