@@ -9,6 +9,8 @@ PyTorch implementation for *[EagleEye: Fast Sub-net Evaluation for Efficient Neu
 
 Presented at [ECCV 2020 (Oral)](https://eccv2020.eu/accepted-papers/)
 
+Check [slides](https://dmmo.dm-ai.cn/eagle_eye/dmai_eagleeye_jiqizhixin202008.pdf) about EagleEye: “High-performance AI on the Edge: from perspectives of model compression and hardware architecture design“, DMAI HiPerAIR, Aug. 2020.
+
 ![pipeline](fig/eye.png)
 
 ## Citation
@@ -25,14 +27,6 @@ If you use EagleEye in your research, please consider citing:
     primaryClass={cs.CV}
 }
 ```
-
-## Code Release Schedule
-
-- [x] Inference Code
-- [x] Pruning Strategy Generation
-- [x] Adaptive-BN-based Candidate Evaluation of Pruning Strategy
-- [x] Finetuning of Pruned Model
-- [x] Documentation
 
 ## Adaptive-BN-based Candidate Evaluation
 
@@ -69,7 +63,7 @@ The code used for training baseline models(MobileNetV1, ResNet50) will be releas
 
 2. **Download Pretrained Models**
 
-   We provide pretrained baseline models and reported pruned models in [Dropbox](<https://www.dropbox.com/sh/im1janxv5p8u5jm/AAA7s6danrqdL42UvteICARra?dl=0>) or [Google Drive](<https://drive.google.com/drive/folders/1ENq4RuFey3J2iL-Lu1BZ9ToTYILpV9bC>). Please put the downloaded models in the dir of `models/ckpt/`.
+   We provide pretrained baseline models and reported pruned models in  [Google Drive](<https://drive.google.com/drive/folders/1ENq4RuFey3J2iL-Lu1BZ9ToTYILpV9bC>). Please put the downloaded models in the dir of `models/ckpt/`.
 
 3. **Prepare Runtime Environment**
 
@@ -83,11 +77,13 @@ Our proposed EagleEye contains 3 steps:
 
 1. Adaptive-BN-based Searching for Pruning Strategy
 2. Candidate Selection
-3. Finetuning of Pruned Model
+3. Fine-tuning of Pruned Model
 
 ### 1. Adaptive-BN-based Searching for Pruning Strategy
 
-On this step, pruning strategies are randomly generated. Then, Adaptive-BN-based evaluation are performed among these pruning strategies. Pruning strategies and their eval scores will be saved to `log.txt`.
+On this step, pruning strategies are randomly generated. Then, Adaptive-BN-based evaluation are performed among these pruning strategies. Pruning strategies and their eval scores will be saved to `search_results/pruning_strategies.txt`.
+
+If you do not want to perform searching by yourself, the provided search result could be found in `search_results/`.
 
 Parameters involved in this steps:
 
@@ -99,9 +95,8 @@ Parameters involved in this steps:
 
 Sample scripts could refer to `1. Search` of `scripts/mbv1_50flops.sh`.
 
-If you do not want to perform searching by yourself, the provided search result could be found in `search_result/`.
-
 **Searching space for different models**
+
 |Model|Pruned FLOPs|[min_rate, max_rate]|
 |-----|-----|--------------------|
 |MobileNetV1|-50%|[0, 0,7]|
@@ -122,9 +117,9 @@ strategy index:985, score:0.123
 
 Sample scripts could refer to `2. Selection` of `scripts/mbv1_50flops.sh`.
 
-### 3. Finetuning of Pruned Model
+### 3. Fine-tuning of Pruned Model
 
-This step take strategy index as input and perform finetuning on it.
+This step take strategy index as input and perform fine-tuning on it.
 
 Parameters involved in this steps:
 
@@ -132,11 +127,11 @@ Parameters involved in this steps:
 |----|-----------|
 |`--search_result`|Searching results|
 |`--strategy_id`|Index of best pruning strategy from step2|
-|`--lr`|Learning rate for finetuning|
+|`--lr`|Learning rate for fine-tuning|
 |`--weight_decay`|Weight decay while fine-tuning|
-|`--epoch`|Number of finetuning epoch|
+|`--epoch`|Number of fine-tuning epoch|
 
-Sample scripts could refer to `3. Finetuning` of `scripts/mbv1_50flops.sh`.
+Sample scripts could refer to `3. Fine-tuning` of `scripts/mbv1_50flops.sh`.
 
 
 
@@ -159,7 +154,7 @@ python3 inference.py \
 **For MobileNetV1:**
 
 ```shell
-python3 main.py \
+python3 inference.py \
 --model_name mobilenetv1 \
 --num_classes 1000 \
 --checkpoint models/ckpt/mobilenetv1_50flops.pth \
@@ -195,8 +190,8 @@ Correlation between evaluation and fine-tuning accuracy with different pruning r
 
 | Model | FLOPs | Top-1 Acc | Top-5 Acc | Checkpoint |
 | ---   | ----  |  -------  | --------  | ---------------- |
-| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% | [resnet50_75flops.pth](https://www.dropbox.com/s/ij6a6xbbtyfozc8/resnet50_75flops.pth?dl=0) <br> [resnet50_50flops.pth](https://www.dropbox.com/s/czc5hl7zjl2d146/resnet50_50flops.pth?dl=0) <br> [resnet50_25flops.pth](https://www.dropbox.com/s/ezdmjvlxx7pgrpo/resnet50_25flops.pth?dl=0) |
-| MobileNetV1 | 284M | 70.9% |  89.62% | [mobilenetv1_50flops.pth](https://www.dropbox.com/s/80o2fxcc63z59qw/mobilenetv1_50flops_latest.pth?dl=0) |
+| ResNet-50 | 3G<br>2G<br>1G | 77.1%<br>76.4%<br>74.2%| 93.37%<br>92.89%<br>91.77% | [resnet50_75flops.pth](https://drive.google.com/file/d/1oPQOZJdKwZPXPSLykLkruHAFhxFmdzHp/view?usp=sharing) <br> [resnet50_50flops.pth](https://drive.google.com/file/d/19eOUO0LTzrQ-9izO4OzXcg83XAGwxf7u/view?usp=sharing) <br> [resnet50_25flops.pth](https://drive.google.com/file/d/1ppBLtajt5xcwa5xoonwn1T98MTB0V9DU/view?usp=sharing) |
+| MobileNetV1 | 284M | 70.9% |  89.62% | [mobilenetv1_50flops.pth](https://drive.google.com/file/d/1LZGqk_oPXNYcGa5Gk93fmHxRgPdfzf9p/view?usp=sharing) |
 
 ### Results on CIFAR-10
 
