@@ -110,7 +110,7 @@ On this step, best pruning strategy is picked from `output_file` generated on st
 
 The output looks like as following:
 ```
-########## mbv1.txt ##########
+########## pruning_strategies.txt ##########
 strategy index:84, score:0.143
 strategy index:985, score:0.123
 ```
