@@ -99,7 +99,7 @@ Sample scripts could refer to `1. Search` of `scripts/mbv1_50flops.sh`.
 
 |Model|Pruned FLOPs|[min_rate, max_rate]|
 |-----|-----|--------------------|
-|MobileNetV1|-50%|[0, 0,7]|
+|MobileNetV1|-50%|[0, 0.7]|
 |ResNet50|-25%|[0, 0.4]|
 |ResNet50|-50%|[0, 0.7]|
 |ResNet50|-75%|[0, 0.8]|
