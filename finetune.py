@@ -169,5 +169,4 @@ def save_checkpoints(acc, model, reporter, exp_name, epoch):
 if __name__ == "__main__":
     # get options
     opt = BaseOptions().parse()
-    while True:
-        main(opt)
+    main(opt)
