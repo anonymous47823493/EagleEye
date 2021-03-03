@@ -28,6 +28,10 @@ If you use EagleEye in your research, please consider citing:
 }
 ```
 
+## Update
+
+* 2021-03-03: We updated the pretrained baseline ResNet50 of ImageNet in in [Google Drive](<https://drive.google.com/drive/folders/1ENq4RuFey3J2iL-Lu1BZ9ToTYILpV9bC>). Before that, incorrect pretrained model cause lower experimental results.
+
 ## Adaptive-BN-based Candidate Evaluation
 
 For the ease of your own implementation, here we present the key code for proposed Adaptive-BN-based Candidate Evaluation. The official implementation will be released soon.
