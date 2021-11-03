@@ -30,7 +30,9 @@ If you use EagleEye in your research, please consider citing:
 
 ## Update
 
-* 2021-03-03: We updated the pretrained baseline ResNet50 of ImageNet in in [Google Drive](<https://drive.google.com/drive/folders/1ENq4RuFey3J2iL-Lu1BZ9ToTYILpV9bC>). Before that, incorrect pretrained model cause lower experimental results.
+* 2021-11-03 We uploaded `Dockerfile` for the convenience of setup.
+
+* 2021-03-03: We updated the pretrained baseline ResNet50 of ImageNet in [Google Drive](<https://drive.google.com/drive/folders/1ENq4RuFey3J2iL-Lu1BZ9ToTYILpV9bC>). Before that, incorrect pretrained model cause lower experimental results.
 
 ## Adaptive-BN-based Candidate Evaluation
 
@@ -71,8 +73,22 @@ The code used for training baseline models(MobileNetV1, ResNet50) will be releas
 
 3. **Prepare Runtime Environment**
 
+   **Via pip/conda**
    ```shell
    pip install -r requirements.txt
+   ```
+
+   **Via Docker**
+   ```shell
+   # Build Image
+   docker build docker/ -t eagleeye:[tag]
+
+   # launch docker container
+   docker run -it --rm \
+    -v [PATH-TO-EAGLEEYE]:/workspace/EagleEye \
+    -v [PATH-TO-IMAGENET]:/data/imagenet \
+    --ipc=host \
+    eagleeye:[tag]
    ```
 
 ## Usage
